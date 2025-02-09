@@ -8,7 +8,10 @@ import ru.practicum.ViewStatsRequest;
 import ru.practicum.mapper.EndpointHitMapper;
 import ru.practicum.repository.StatsRepository;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,18 +27,30 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     public List<ViewStats> calculateViews(ViewStatsRequest request) {
-        List<Object[]> rawStats = repository.findViewStats(
+        List<Object[]> rawStats = request.getUris().isEmpty()
+                ? repository.findViewStatsWithoutUris(
                 request.getStart(),
                 request.getEnd(),
-                request.getUris().isEmpty() ? null : request.getUris(),
-                request.isUnique()
-        );
-        return rawStats.stream()
-                .map(row -> new ViewStats(
-                        (String) row[0],
-                        (String) row[1],
-                        ((Number) row[2]).longValue()
-                ))
+                request.isUnique())
+                : repository.findViewStatsWithUris(
+                request.getStart(),
+                request.getEnd(),
+                request.getUris(),
+                request.isUnique());
+
+        return buildViewStatsList(rawStats);
+    }
+
+    private List<ViewStats> buildViewStatsList(List<Object[]> rawStats) {
+        return Objects.requireNonNullElse(rawStats, Collections.emptyList()).stream()
+                .map(obj -> {
+                    Object[] row = (Object[]) obj;
+                    return new ViewStats(
+                            Objects.requireNonNull((String) row[0], "app cannot be null"),
+                            Objects.requireNonNull((String) row[1], "uri cannot be null"),
+                            Optional.ofNullable((Number) row[2]).map(Number::longValue).orElse(0L)
+                    );
+                })
                 .collect(Collectors.toList());
     }
 }

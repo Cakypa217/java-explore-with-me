@@ -13,15 +13,28 @@ import java.util.List;
 public interface StatsRepository extends JpaRepository<EndpointHitEntity, Long> {
 
     @Query(value = """
-                SELECT app, uri, COUNT(CASE WHEN :unique = true THEN DISTINCT ip ELSE 1 END) AS hits
-                FROM endpoint_hit
-                WHERE timestamp BETWEEN :start AND :end
-                AND (:uris IS NULL OR uri IN (:uris))
-                GROUP BY app, uri
-                ORDER BY hits DESC
+            SELECT app, uri,
+            CASE WHEN :unique = true THEN COUNT(DISTINCT ip) ELSE COUNT(ip) END AS hits
+            FROM endpoint_hit
+            WHERE timestamp BETWEEN :start AND :end
+            GROUP BY app, uri
+            ORDER BY hits DESC
             """, nativeQuery = true)
-    List<Object[]> findViewStats(@Param("start") LocalDateTime start,
-                                 @Param("end") LocalDateTime end,
-                                 @Param("uris") List<String> uris,
-                                 @Param("unique") boolean unique);
+    List<Object[]> findViewStatsWithoutUris(@Param("start") LocalDateTime start,
+                                            @Param("end") LocalDateTime end,
+                                            @Param("unique") boolean unique);
+
+    @Query(value = """
+            SELECT app, uri,
+            CASE WHEN :unique = true THEN COUNT(DISTINCT ip) ELSE COUNT(ip) END AS hits
+            FROM endpoint_hit
+            WHERE timestamp BETWEEN :start AND :end
+            AND uri IN (:uris)
+            GROUP BY app, uri
+            ORDER BY hits DESC
+            """, nativeQuery = true)
+    List<Object[]> findViewStatsWithUris(@Param("start") LocalDateTime start,
+                                         @Param("end") LocalDateTime end,
+                                         @Param("uris") List<String> uris,
+                                         @Param("unique") boolean unique);
 }

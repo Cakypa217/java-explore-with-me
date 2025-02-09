@@ -46,7 +46,7 @@ public class StatsController {
             ViewStatsRequest request = ViewStatsRequest.builder()
                     .start(startDT)
                     .end(endDT)
-                    .uris(uris != null ? uris : Collections.emptyList())
+                    .uris((uris == null || uris.isEmpty()) ? Collections.emptyList() : uris)
                     .unique(unique)
                     .build();
 
