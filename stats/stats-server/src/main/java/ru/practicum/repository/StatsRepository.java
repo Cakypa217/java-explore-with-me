@@ -13,15 +13,25 @@ import java.util.List;
 @Repository
 public interface StatsRepository extends JpaRepository<EndpointHitEntity, Long> {
 
-    @Query("SELECT new ru.practicum.ViewStats(e.app, e.uri, " +
-            "CASE WHEN :unique = true THEN COUNT(DISTINCT e.ip) ELSE COUNT(e.ip) END) " +
-            "FROM EndpointHitEntity e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
-            "AND (:uris IS NULL OR SIZE(:uris) = 0 OR e.uri IN :uris) " +
-            "GROUP BY e.app, e.uri " +
-            "ORDER BY COUNT(e.ip) DESC")
+    @Query("SELECT new ru.practicum.ViewStats(h.app, h.uri, " +
+            "COUNT(DISTINCT CASE WHEN :unique = true THEN h.ip ELSE NULL END)) " +
+            "FROM EndpointHitEntity h " +
+            "WHERE h.timestamp BETWEEN :start AND :end " +
+            "GROUP BY h.app, h.uri " +
+            "ORDER BY COUNT(h.ip) DESC")
     List<ViewStats> findViewsStats(@Param("start") LocalDateTime start,
                                    @Param("end") LocalDateTime end,
-                                   @Param("uris") List<String> uris,
                                    @Param("unique") boolean unique);
+
+    @Query("SELECT new ru.practicum.ViewStats(h.app, h.uri, " +
+            "COUNT(DISTINCT CASE WHEN :unique = true THEN h.ip ELSE NULL END)) " +
+            "FROM EndpointHitEntity h " +
+            "WHERE h.timestamp BETWEEN :start AND :end " +
+            "AND h.uri IN :uris " +
+            "GROUP BY h.app, h.uri " +
+            "ORDER BY COUNT(h.ip) DESC")
+    List<ViewStats> findViewsStatsWithUri(@Param("start") LocalDateTime start,
+                                          @Param("end") LocalDateTime end,
+                                          @Param("uris") List<String> uris,
+                                          @Param("unique") boolean unique);
 }
