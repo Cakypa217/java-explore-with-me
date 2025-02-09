@@ -9,6 +9,7 @@ import ru.practicum.mapper.EndpointHitMapper;
 import ru.practicum.repository.StatsRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,19 +24,18 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     public List<ViewStats> calculateViews(ViewStatsRequest request) {
-        if (request.getUris() == null || request.getUris().isEmpty()) {
-            return repository.findViewsStats(
-                    request.getStart(),
-                    request.getEnd(),
-                    request.isUnique()
-            );
-        } else {
-            return repository.findViewsStatsWithUri(
-                    request.getStart(),
-                    request.getEnd(),
-                    request.getUris(),
-                    request.isUnique()
-            );
-        }
+        List<Object[]> rawStats = repository.findViewStats(
+                request.getStart(),
+                request.getEnd(),
+                request.getUris().isEmpty() ? null : request.getUris(),
+                request.isUnique()
+        );
+        return rawStats.stream()
+                .map(row -> new ViewStats(
+                        (String) row[0],
+                        (String) row[1],
+                        ((Number) row[2]).longValue()
+                ))
+                .collect(Collectors.toList());
     }
 }
