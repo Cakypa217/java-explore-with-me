@@ -8,6 +8,7 @@ import ru.practicum.ViewStatsRequest;
 import ru.practicum.mapper.EndpointHitMapper;
 import ru.practicum.repository.StatsRepository;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -23,11 +24,12 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     public List<ViewStats> calculateViews(ViewStatsRequest request) {
-        return repository.findViewsStats(
+        List<ViewStats> stats = repository.findViewsStats(
                 request.getStart(),
                 request.getEnd(),
                 request.getUris().isEmpty() ? null : request.getUris(),
                 request.isUnique()
         );
+        return stats != null ? stats : Collections.emptyList();
     }
 }

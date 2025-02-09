@@ -14,10 +14,10 @@ import java.util.List;
 public interface StatsRepository extends JpaRepository<EndpointHitEntity, Long> {
 
     @Query("SELECT new ru.practicum.ViewStats(e.app, e.uri, " +
-            "COUNT(DISTINCT CASE WHEN :unique = true THEN e.ip ELSE 1 END)) " +
+            "CASE WHEN :unique = true THEN COUNT(DISTINCT e.ip) ELSE COUNT(e.ip) END) " +
             "FROM EndpointHitEntity e " +
             "WHERE e.timestamp BETWEEN :start AND :end " +
-            "AND (:uris IS NULL OR e.uri IN :uris) " +
+            "AND (:uris IS NULL OR SIZE(:uris) = 0 OR e.uri IN :uris) " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(e.ip) DESC")
     List<ViewStats> findViewsStats(@Param("start") LocalDateTime start,
