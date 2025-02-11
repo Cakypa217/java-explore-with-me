@@ -1,14 +1,75 @@
+version: '3.8'
 services:
-  stats-server:
-    ports:
-      - "9090:9090"
-
   stats-db:
     image: postgres:16.1
-
-  ewm-service:
+    container_name: stats-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stats
+      POSTGRES_USER: stats_user
+      POSTGRES_PASSWORD: stats_password
     ports:
-      - "8080:8080"
+      - "5433:5432"
+    volumes:
+      - stats_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U stats_user -d stats" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  stats-server:
+    build:
+      context: ./stats/stats-server
+      dockerfile: Dockerfile
+    container_name: stats-server
+    restart: unless-stopped
+    depends_on:
+      stats-db:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
+      SPRING_DATASOURCE_USERNAME: stats_user
+      SPRING_DATASOURCE_PASSWORD: stats_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
 
   ewm-db:
     image: postgres:16.1
+    container_name: ewm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ewm
+      POSTGRES_USER: ewm_user
+      POSTGRES_PASSWORD: ewm_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ewm_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ewm_user -d ewm" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  ewm-service:
+    build:
+      context: ./main-service
+      dockerfile: Dockerfile
+    container_name: ewm-service
+    restart: unless-stopped
+    depends_on:
+      ewm-db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
+      SPRING_DATASOURCE_USERNAME: ewm_user
+      SPRING_DATASOURCE_PASSWORD: ewm_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+volumes:
+  stats_data:
+  ewm_data:
