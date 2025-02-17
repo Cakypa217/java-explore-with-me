@@ -8,9 +8,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.practicum.mapper.CompilationMapper;
+import ru.practicum.mapper.EventMapper;
 import ru.practicum.model.dto.compilation.CompilationDto;
 import ru.practicum.model.dto.compilation.NewCompilationDto;
 import ru.practicum.model.dto.compilation.UpdateCompilationRequest;
+import ru.practicum.model.dto.event.EventShortDto;
 import ru.practicum.model.entity.Compilation;
 import ru.practicum.model.entity.Event;
 import ru.practicum.repository.CompilationsRepository;
@@ -20,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,6 +31,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationsRepository compilationsRepository;
     private final CompilationMapper compilationMapper;
     private final EventRepository eventRepository;
+    private final EventMapper eventMapper;
 
     @Override
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
@@ -37,14 +41,14 @@ public class CompilationServiceImpl implements CompilationService {
                 ? Collections.emptySet()
                 : new HashSet<>(eventRepository.findAllById(newCompilationDto.getEvents()));
 
-        Compilation compilation = new Compilation();
-        compilation.setTitle(newCompilationDto.getTitle());
-        compilation.setPinned(newCompilationDto.getPinned());
-        compilation.setEvents(events);
+        Set<EventShortDto> eventShortDto = events.stream()
+                .map(eventMapper::toEventShortDto)
+                .collect(Collectors.toSet());
 
+
+        Compilation compilation = compilationMapper.toCompilation(newCompilationDto, events);
         Compilation savedCompilation = compilationsRepository.save(compilation);
-        CompilationDto savedCompilationDto = compilationMapper.toCompilationDto(savedCompilation);
-
+        CompilationDto savedCompilationDto = compilationMapper.toCompilationDto(savedCompilation, eventShortDto);
 
         log.info("Создана подборка: {}", savedCompilationDto);
         return savedCompilationDto;
@@ -64,21 +68,20 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = compilationsRepository.findById(compId)
                 .orElseThrow(() -> new EntityNotFoundException("Compilation with id=" + compId + " not found"));
 
-        compilationMapper.updateCompilationFromDto(updateCompilationRequest, compilation);
 
-        if (updateCompilationRequest.getTitle() != null) {
-            compilation.setTitle(updateCompilationRequest.getTitle());
-        }
-        if (updateCompilationRequest.getPinned() != null) {
-            compilation.setPinned(updateCompilationRequest.getPinned());
-        }
+        Compilation updateCompilation = compilationMapper.updateCompilationFromDto(updateCompilationRequest, compilation);
+
         if (updateCompilationRequest.getEvents() != null) {
-            List<Event> events = eventRepository.findAllById(updateCompilationRequest.getEvents());
+            Set<Event> events = new HashSet<>(eventRepository.findAllById(updateCompilationRequest.getEvents()));
             compilation.setEvents(new HashSet<>(events));
         }
 
-        Compilation updatedCompilation = compilationsRepository.save(compilation);
-        CompilationDto updatedCompilationDto = compilationMapper.toCompilationDto(updatedCompilation);
+        Set<EventShortDto> eventShortDto = compilation.getEvents().stream()
+                .map(eventMapper::toEventShortDto)
+                .collect(Collectors.toSet());
+
+        Compilation updatedCompilation = compilationsRepository.save(updateCompilation);
+        CompilationDto updatedCompilationDto = compilationMapper.toCompilationDto(updatedCompilation, eventShortDto);
 
         log.info("Обновленная подборка: {}", updatedCompilation);
         return updatedCompilationDto;
@@ -98,7 +101,12 @@ public class CompilationServiceImpl implements CompilationService {
         }
 
         List<CompilationDto> compilationD = compilationsPage.getContent().stream()
-                .map(compilationMapper::toCompilationDto)
+                .map(compilation -> {
+                    Set<EventShortDto> eventShort = compilation.getEvents().stream()
+                            .map(eventMapper::toEventShortDto)
+                            .collect(Collectors.toSet());
+                    return compilationMapper.toCompilationDto(compilation, eventShort);
+                })
                 .toList();
 
         log.info("Список подборок: {}", compilationD);
@@ -112,7 +120,11 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = compilationsRepository.findById(compId)
                 .orElseThrow(() -> new EntityNotFoundException("Compilation with id=" + compId + " not found"));
 
-        CompilationDto compilationDto = compilationMapper.toCompilationDto(compilation);
+        Set<EventShortDto> eventShortDto = compilation.getEvents().stream()
+                .map(eventMapper::toEventShortDto)
+                .collect(Collectors.toSet());
+
+        CompilationDto compilationDto = compilationMapper.toCompilationDto(compilation, eventShortDto);
 
         log.info("Подборка: {}", compilationDto);
         return compilationDto;

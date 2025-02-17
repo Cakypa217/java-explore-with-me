@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.practicum.model.enums.EventState;
 
 import java.time.LocalDateTime;
 
@@ -35,7 +36,7 @@ public class UpdateEventAdminRequest {
 
     private Boolean requestModeration;
 
-    private String stateAction;
+    private EventState eventState;
 
     @Size(min = 3, max = 120)
     private String title;

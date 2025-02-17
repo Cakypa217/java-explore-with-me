@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS events (
     request_moderation BOOLEAN DEFAULT TRUE,
     state VARCHAR(20) NOT NULL,
     views BIGINT DEFAULT 0,
+    confirmed_requests BIGINT DEFAULT 0,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
     FOREIGN KEY (initiator_id) REFERENCES users(id) ON DELETE CASCADE
 );

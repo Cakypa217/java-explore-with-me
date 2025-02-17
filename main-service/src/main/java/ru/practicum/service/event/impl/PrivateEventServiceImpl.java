@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.EventMapper;
-import ru.practicum.mapper.EventUpdateMapper;
+import ru.practicum.mapper.ImplEventMapper;
 import ru.practicum.mapper.RequestMapper;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.EventShortDto;
@@ -46,7 +46,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     private final RequestRepository requestRepository;
     private final RequestMapper requestMapper;
     private final EventMapper eventMapper;
-    private final EventUpdateMapper eventUpdateMapper;
+    private final ImplEventMapper implEventMapper;
 
     @Override
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
@@ -60,7 +60,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
             throw new ConflictException("Время события должна быть не раньше чем через 2 часа.");
         }
 
-        Event event = eventMapper.toEvent(newEventDto);
+        Event event = implEventMapper.toEvent(newEventDto);
         event.setInitiator(user);
         event.setCategory(category);
         event.setCreatedOn(now);
@@ -131,7 +131,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         }
 
         Category category = categoryService.findById(updateEventUserRequest.getCategory());
-        Event updatedEv = eventUpdateMapper.updateEventFromDto(updateEventUserRequest, event, category);
+        Event updatedEv = implEventMapper.userApdateEvent(updateEventUserRequest, event, category);
         Event updatedEvent = eventRepository.save(updatedEv);
         EventFullDto eventFullDto = eventMapper.toEventFullDto(updatedEvent);
 
@@ -159,7 +159,22 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         if (eventRequestStatusUpdateRequest.getStatus().equals(ParticipationStatus.REJECTED)) {
             return rejectRequests(requests);
         } else if (eventRequestStatusUpdateRequest.getStatus().equals(ParticipationStatus.CONFIRMED)) {
-            return confirmRequests(requests, event);
+            long confirmedCount = event.getConfirmedRequests().intValue();
+            long participantLimit = event.getParticipantLimit();
+
+            if (participantLimit > 0 && confirmedCount >= participantLimit) {
+                throw new ConflictException("Достигнут лимит участников для этого события.");
+            }
+
+            if (participantLimit > 0 && confirmedCount + requests.size() > participantLimit) {
+                throw new ConflictException("Невозможно подтвердить заявки, превышается лимит участников.");
+            }
+
+            EventRequestStatusUpdateResult result = confirmRequests(requests, event);
+            event.setConfirmedRequests(event.getConfirmedRequests() + requests.size());
+            eventRepository.save(event);
+
+            return result;
         } else {
             throw new BadRequestException("Некорректный статус заявки: " + eventRequestStatusUpdateRequest.getStatus());
         }

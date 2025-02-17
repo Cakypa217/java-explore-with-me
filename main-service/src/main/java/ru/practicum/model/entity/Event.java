@@ -32,8 +32,8 @@ public class Event {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Transient
-    private long confirmedRequests;
+    @Column(name = "confirmed_requests", nullable = false)
+    private Long confirmedRequests = 0L;
 
     @ManyToOne
     @JoinColumn(name = "initiator_id", nullable = false)

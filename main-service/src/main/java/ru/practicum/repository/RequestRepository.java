@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.practicum.model.entity.ParticipationRequest;
+import ru.practicum.model.enums.ParticipationStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,8 @@ public interface RequestRepository extends JpaRepository<ParticipationRequest, L
     Optional<ParticipationRequest> findByRequesterIdAndEventId(Long requesterId, Long eventId);
 
     long countByEventId(Long eventId);
+
+    long countByEventIdAndStatus(long eventId, ParticipationStatus status);
 
     long countByEventIdAndStatus(Long eventId, String status);
 

@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.model.enums.StateAction;
 
 import java.time.LocalDateTime;
 
@@ -41,8 +40,6 @@ public class NewEventDto {
     private Long participantLimit = 0L;
 
     private Boolean requestModeration;
-
-    private StateAction stateAction;
 
     @NotNull
     @Size(min = 3, max = 120)

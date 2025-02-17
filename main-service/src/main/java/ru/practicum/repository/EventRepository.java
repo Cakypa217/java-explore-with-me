@@ -3,6 +3,7 @@ package ru.practicum.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -52,6 +53,15 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                @Param("rangeStart") LocalDateTime rangeStart,
                                @Param("rangeEnd") LocalDateTime rangeEnd,
                                Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Event e SET e.confirmedRequests = e.confirmedRequests + 1 WHERE e.id = :eventId")
+    void incrementConfirmedRequests(@Param("eventId") Long eventId);
+
+    @Modifying
+    @Query("UPDATE Event e SET e.confirmedRequests = e.confirmedRequests - 1 WHERE e.id = :eventId AND e.confirmedRequests > 0")
+    void decrementConfirmedRequests(@Param("eventId") Long eventId);
+
 //    @Query("""
 //        SELECT e FROM Event e
 //        WHERE (:users IS NULL OR e.initiator.id IN :users OR :users = '[]')

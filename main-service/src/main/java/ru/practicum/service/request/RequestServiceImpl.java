@@ -12,6 +12,7 @@ import ru.practicum.model.entity.ParticipationRequest;
 import ru.practicum.model.entity.User;
 import ru.practicum.model.enums.EventState;
 import ru.practicum.model.enums.ParticipationStatus;
+import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.RequestRepository;
 import ru.practicum.service.event.interfaces.PrivateEventService;
 import ru.practicum.service.user.UserService;
@@ -27,6 +28,7 @@ public class RequestServiceImpl implements RequestService {
     private final PrivateEventService privateEventService;
     private final UserService userService;
     private final RequestMapper requestMapper;
+    private final EventRepository eventRepository;
 
     @Override
     public ParticipationRequestDto createRequest(long userId, long eventId) {
@@ -36,13 +38,13 @@ public class RequestServiceImpl implements RequestService {
         User user = userService.findById(userId);
         validateForCreate(userId, event);
 
+        boolean needModeration = event.getRequestModeration() && event.getParticipantLimit() > 0;
         ParticipationRequest participationRequest = new ParticipationRequest();
         participationRequest.setEvent(event);
         participationRequest.setRequester(user);
-        participationRequest.setStatus(event.getRequestModeration()
-                ? ParticipationStatus.PENDING
-                : ParticipationStatus.CONFIRMED);
+        participationRequest.setStatus(needModeration ? ParticipationStatus.PENDING : ParticipationStatus.CONFIRMED);
         participationRequest.setCreated(LocalDateTime.now());
+
 
         ParticipationRequest savedRequest = requestRepository.save(participationRequest);
         ParticipationRequestDto participationRequestDto = requestMapper.toParticipationRequestDto(savedRequest);
@@ -75,6 +77,14 @@ public class RequestServiceImpl implements RequestService {
                     " не может отменить запрос с id = " + requestId + ", так как он ему не принадлежит.");
         }
 
+        if (request.getStatus().equals(ParticipationStatus.CONFIRMED)) {
+            Event event = request.getEvent();
+            if (event.getConfirmedRequests() > 0) {
+                event.setConfirmedRequests(event.getConfirmedRequests() - 1);
+                eventRepository.save(event);
+            }
+        }
+
         request.setStatus(ParticipationStatus.REJECTED);
         ParticipationRequest savedRequest = requestRepository.save(request);
         ParticipationRequestDto participationRequestDto = requestMapper.toParticipationRequestDto(savedRequest);
@@ -86,7 +96,7 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public ParticipationRequest findById(long requestId) {
         return requestRepository.findById(requestId)
-                .orElseThrow(() -> new EntityNotFoundException("Запрос с id " + requestId + " не найдена"));
+                .orElseThrow(() -> new EntityNotFoundException("Запрос с id " + requestId + " не найден"));
     }
 
     public void validateForCreate(long userId, Event event) {
@@ -99,7 +109,7 @@ public class RequestServiceImpl implements RequestService {
         if (!event.getState().equals(EventState.PUBLISHED)) {
             throw new ConflictException("Нельзя участвовать в неопубликованном событии.");
         }
-        long confirmedRequests = requestRepository.countByEventId(event.getId());
+        long confirmedRequests = requestRepository.countByEventIdAndStatus(event.getId(), ParticipationStatus.CONFIRMED);
         if (event.getParticipantLimit() > 0 && confirmedRequests >= event.getParticipantLimit()) {
             throw new ConflictException("Достигнут лимит запросов на участие.");
         }

@@ -7,14 +7,18 @@ import org.springframework.stereotype.Service;
 import ru.practicum.client.StatsClient;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.EventMapper;
+import ru.practicum.mapper.ImplEventMapper;
 import ru.practicum.model.dto.client.ViewStats;
 import ru.practicum.model.dto.client.ViewStatsRequest;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.UpdateEventAdminRequest;
+import ru.practicum.model.entity.Category;
 import ru.practicum.model.entity.Event;
 import ru.practicum.model.enums.EventState;
+import ru.practicum.repository.CategoryRepository;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.RequestRepository;
+import ru.practicum.service.category.CategoryService;
 import ru.practicum.service.event.interfaces.AdminEventService;
 import ru.practicum.service.event.interfaces.PrivateEventService;
 
@@ -28,9 +32,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminEventServiceImpl implements AdminEventService {
     private final EventRepository eventRepository;
+    private final CategoryService categoryService;
     private final RequestRepository requestRepository;
     private final PrivateEventService privateEventService;
     private final EventMapper eventMapper;
+    private final ImplEventMapper implEventMapper;
     private final StatsClient statsClient;
 
 
@@ -106,9 +112,9 @@ public class AdminEventServiceImpl implements AdminEventService {
             }
         }
 
-        if (updateRequest.getStateAction() != null) {
-            switch (updateRequest.getStateAction()) {
-                case "PUBLISH_EVENT":
+        if (updateRequest.getEventState() != null) {
+            switch (updateRequest.getEventState()) {
+                case PUBLISHED:
                     if (event.getState() != EventState.PENDING) {
                         throw new ConflictException("Нельзя опубликовать событие, так как оно не в статусе ожидания публикации");
                     }
@@ -116,19 +122,23 @@ public class AdminEventServiceImpl implements AdminEventService {
                     event.setPublishedOn(LocalDateTime.now());
                     break;
 
-                case "REJECT_EVENT":
+                case CANCELED:
                     if (event.getState() == EventState.PUBLISHED) {
                         throw new ConflictException("Нельзя отклонить событие, так как оно уже опубликовано");
                     }
                     event.setState(EventState.CANCELED);
                     break;
 
+                case PENDING:
+                    break;
+
                 default:
-                    throw new IllegalArgumentException("Недопустимое действие: " + updateRequest.getStateAction());
+                    throw new IllegalArgumentException("Недопустимое действие: " + updateRequest.getEventState());
             }
         }
 
-        eventMapper.updateEventFromDto(updateRequest, event);
+        Category category = categoryService.findById(updateRequest.getCategory());
+        implEventMapper.adminUpdateEvent(updateRequest, event, category);
         event = eventRepository.save(event);
         EventFullDto result = eventMapper.toEventFullDto(event);
 
