@@ -17,6 +17,7 @@ import ru.practicum.model.dto.event.EventShortDto;
 import ru.practicum.model.entity.Event;
 import ru.practicum.model.enums.EventSort;
 import ru.practicum.model.enums.EventState;
+import ru.practicum.model.enums.ParticipationStatus;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.RequestRepository;
 import ru.practicum.service.event.interfaces.PublicEventService;
@@ -61,7 +62,7 @@ public class PublicEventServiceImpl implements PublicEventService {
 
         long views = stats.isEmpty() ? 0 : stats.getFirst().getHits();
 
-        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, "CONFIRMED");
+        long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, ParticipationStatus.CONFIRMED);
 
         EventFullDto eventFullDto = eventMapper.toEventFullDto(event);
         eventFullDto.setViews(views);

@@ -64,12 +64,13 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         event.setInitiator(user);
         event.setCategory(category);
         event.setCreatedOn(now);
-        event.setPublishedOn(null);
+        event.setPublishedOn(LocalDateTime.now());
         event.setState(EventState.PENDING);
 
         Event savedEvent = eventRepository.save(event);
         EventFullDto eventFullDto = eventMapper.toEventFullDto(savedEvent);
 
+        log.info("Событие {} создано", savedEvent);
         log.info("Событие {} создано", eventFullDto);
         return eventFullDto;
     }
@@ -119,23 +120,31 @@ public class PrivateEventServiceImpl implements PrivateEventService {
 
     @Override
     public EventFullDto updateEvent(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
-        log.info("Получен запрос на обновление события с id = {} пользователя с id = {}", eventId, userId);
+        log.info("Получен запрос на обновление события с id = {} пользователя с id = {} на {}",
+                eventId, userId, updateEventUserRequest);
 
         Event event = findByInitiator(userId, eventId);
-        if (event.getState() != EventState.PENDING && event.getState() != EventState.CANCELED) {
+        if (event.getState() != EventState.PENDING && event.getState() != EventState.PUBLISHED) {
             throw new ConflictException("Обновить можно только ожидающие или отмененные события");
         }
-        LocalDateTime now = LocalDateTime.now();
-        if (updateEventUserRequest.getEventDate().isBefore(now.plusHours(2))) {
-            throw new ConflictException("Время события должна быть не раньше чем через 2 часа.");
+        if (updateEventUserRequest.getEventDate() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            if (updateEventUserRequest.getEventDate().isBefore(now.plusHours(2))) {
+                throw new ConflictException("Время события должна быть не раньше чем через 2 часа.");
+            }
         }
 
-        Category category = categoryService.findById(updateEventUserRequest.getCategory());
-        Event updatedEv = implEventMapper.userApdateEvent(updateEventUserRequest, event, category);
+        Event updatedEv = implEventMapper.userApdateEvent(updateEventUserRequest, event);
+
+        if (updateEventUserRequest.getCategory() != null) {
+            Category category = categoryService.findById(updateEventUserRequest.getCategory());
+            updatedEv.setCategory(category);
+        }
+
         Event updatedEvent = eventRepository.save(updatedEv);
         EventFullDto eventFullDto = eventMapper.toEventFullDto(updatedEvent);
 
-        log.info("Событие с id = {} обновлено", eventId);
+        log.info("Событие с id = {} обновлено на {} ", eventId, eventFullDto);
         return eventFullDto;
     }
 
@@ -145,7 +154,6 @@ public class PrivateEventServiceImpl implements PrivateEventService {
             Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
         log.info("Обновление статусов заявок на участие в событии id={} пользователем id={}", eventId, userId);
 
-        findById(eventId);
         Event event = findByInitiator(userId, eventId);
 
         List<ParticipationRequest> requests = requestRepository.findAllById(eventRequestStatusUpdateRequest.getRequestIds());
@@ -205,7 +213,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
             return new EventRequestStatusUpdateResult(confirmedDtos, Collections.emptyList());
         }
 
-        long confirmedCount = requestRepository.countByEventIdAndStatus(event.getId(), "CONFIRMED");
+        long confirmedCount = requestRepository.countByEventIdAndStatus(event.getId(), ParticipationStatus.CONFIRMED);
         long availableSlots = event.getParticipantLimit() - confirmedCount;
 
 
@@ -242,11 +250,12 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     public Event findByInitiator(Long userId, Long eventId) {
         return eventRepository.findByInitiatorIdAndId(userId, eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Событие id: " + eventId +
-                        " не найденоДля у пользователя " + userId ));
+                        " не найденоДля у пользователя " + userId));
     }
 
     @Override
     public Event findById(Long eventId) {
+        log.info("Получен запрос на получение события с id = {}", eventId);
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Событие с id = " + eventId + " не найдено"));
     }

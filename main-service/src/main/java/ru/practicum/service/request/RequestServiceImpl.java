@@ -38,7 +38,7 @@ public class RequestServiceImpl implements RequestService {
         User user = userService.findById(userId);
         validateForCreate(userId, event);
 
-        boolean needModeration = event.getRequestModeration() && event.getParticipantLimit() > 0;
+        boolean needModeration = event.getRequestModeration();
         ParticipationRequest participationRequest = new ParticipationRequest();
         participationRequest.setEvent(event);
         participationRequest.setRequester(user);
@@ -85,11 +85,11 @@ public class RequestServiceImpl implements RequestService {
             }
         }
 
-        request.setStatus(ParticipationStatus.REJECTED);
+        request.setStatus(ParticipationStatus.CANCELED);
         ParticipationRequest savedRequest = requestRepository.save(request);
         ParticipationRequestDto participationRequestDto = requestMapper.toParticipationRequestDto(savedRequest);
 
-        log.info("Запрос с id = {} отменен", requestId);
+        log.info("Запрос с id = {} отменен. {}", requestId, participationRequestDto);
         return participationRequestDto;
     }
 

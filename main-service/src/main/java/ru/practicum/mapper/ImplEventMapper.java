@@ -12,6 +12,9 @@ import ru.practicum.model.enums.EventState;
 
 import java.time.LocalDateTime;
 
+import static ru.practicum.model.enums.StateAction.CANCEL_REVIEW;
+import static ru.practicum.model.enums.StateAction.SEND_TO_REVIEW;
+
 @Component
 public class ImplEventMapper {
 
@@ -24,19 +27,17 @@ public class ImplEventMapper {
         event.setPaid(newEventDto.getPaid());
         event.setParticipantLimit(newEventDto.getParticipantLimit() == null ? 0 : newEventDto.getParticipantLimit());
         event.setRequestModeration(newEventDto.getRequestModeration());
+        event.setTitle(newEventDto.getTitle());
         event.setState(EventState.PENDING);
         return event;
     }
 
-    public Event userApdateEvent(UpdateEventUserRequest updateEventUserRequest, Event event, Category category) {
+    public Event userApdateEvent(UpdateEventUserRequest updateEventUserRequest, Event event) {
         if (updateEventUserRequest.getEventDate() != null) {
             if (updateEventUserRequest.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
                 throw new ForbiddenException("Время события должно быть не раньше чем через 2 часа.");
             }
             event.setEventDate(updateEventUserRequest.getEventDate());
-        }
-        if (updateEventUserRequest.getCategory() != null) {
-            event.setCategory(category);
         }
         if (updateEventUserRequest.getAnnotation() != null) {
             event.setAnnotation(updateEventUserRequest.getAnnotation());
@@ -60,8 +61,15 @@ public class ImplEventMapper {
         if (updateEventUserRequest.getRequestModeration() != null) {
             event.setRequestModeration(updateEventUserRequest.getRequestModeration());
         }
-        if (updateEventUserRequest.getEventState() != null) {
-            event.setState(EventState.valueOf(updateEventUserRequest.getEventState().name()));
+        if (updateEventUserRequest.getStateAction() != null) {
+            switch (updateEventUserRequest.getStateAction()) {
+                case SEND_TO_REVIEW:
+                    event.setState(EventState.PENDING);
+                    break;
+                case CANCEL_REVIEW:
+                    event.setState(EventState.CANCELED);
+                    break;
+            }
         }
         if (updateEventUserRequest.getTitle() != null) {
             event.setTitle(updateEventUserRequest.getTitle());
@@ -98,11 +106,11 @@ public class ImplEventMapper {
         if (updateEventAdminRequest.getRequestModeration() != null) {
             event.setRequestModeration(updateEventAdminRequest.getRequestModeration());
         }
-        if (updateEventAdminRequest.getEventState() != null) {
-            event.setState(EventState.valueOf(updateEventAdminRequest.getEventState().name()));
-        }
         if (updateEventAdminRequest.getTitle() != null) {
             event.setTitle(updateEventAdminRequest.getTitle());
+        }
+        if (updateEventAdminRequest.getPaid() != null) {
+            event.setPaid(updateEventAdminRequest.getPaid());
         }
         return event;
     }

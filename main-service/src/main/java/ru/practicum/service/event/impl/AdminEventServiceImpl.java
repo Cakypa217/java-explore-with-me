@@ -26,6 +26,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static ru.practicum.model.enums.EventState.*;
+
 
 @Slf4j
 @Service
@@ -43,13 +45,14 @@ public class AdminEventServiceImpl implements AdminEventService {
     @Override
     public List<EventFullDto> getEvents(List<Long> users, List<String> states, List<Long> categories,
                                         LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
-        log.info("Получен запрос на получение событий администратором");
-
+        log.info("Получение событий администратором с кретериями: " +
+                "users: {}, states: {}, categories: {}, rangeStart: {}, rangeEnd: {}, from: {}, size: {}",
+        users, states, categories, rangeStart, rangeEnd, from, size);
         if (rangeStart == null) {
             rangeStart = LocalDateTime.now();
         }
         if (rangeEnd == null) {
-            rangeEnd = LocalDateTime.now().plusYears(1);
+            rangeEnd = LocalDateTime.now().plusYears(100);
         }
         if (users == null) {
             users = Collections.emptyList();
@@ -101,7 +104,7 @@ public class AdminEventServiceImpl implements AdminEventService {
 
     @Override
     public EventFullDto updateEvent(Long eventId, UpdateEventAdminRequest updateRequest) {
-        log.info("Администратор обновляет событие {}", eventId);
+        log.info("Администратор обновляет событие {}, на {}", eventId, updateRequest);
 
         Event event = privateEventService.findById(eventId);
 
@@ -112,9 +115,9 @@ public class AdminEventServiceImpl implements AdminEventService {
             }
         }
 
-        if (updateRequest.getEventState() != null) {
-            switch (updateRequest.getEventState()) {
-                case PUBLISHED:
+        if (updateRequest.getStateAction() != null) {
+            switch (updateRequest.getStateAction()) {
+                case PUBLISH_EVENT:
                     if (event.getState() != EventState.PENDING) {
                         throw new ConflictException("Нельзя опубликовать событие, так как оно не в статусе ожидания публикации");
                     }
@@ -122,27 +125,29 @@ public class AdminEventServiceImpl implements AdminEventService {
                     event.setPublishedOn(LocalDateTime.now());
                     break;
 
-                case CANCELED:
+                case REJECT_EVENT:
                     if (event.getState() == EventState.PUBLISHED) {
                         throw new ConflictException("Нельзя отклонить событие, так как оно уже опубликовано");
                     }
                     event.setState(EventState.CANCELED);
                     break;
 
-                case PENDING:
-                    break;
-
                 default:
-                    throw new IllegalArgumentException("Недопустимое действие: " + updateRequest.getEventState());
+                    throw new IllegalArgumentException("Недопустимое действие: " + updateRequest.getStateAction());
             }
+        } else {
+            event.setState(EventState.PUBLISHED);
         }
 
-        Category category = categoryService.findById(updateRequest.getCategory());
+        Category category = null;
+        if (updateRequest.getCategory() != null) {
+            category = categoryService.findById(updateRequest.getCategory());
+        }
         implEventMapper.adminUpdateEvent(updateRequest, event, category);
         event = eventRepository.save(event);
         EventFullDto result = eventMapper.toEventFullDto(event);
 
-        log.info("Администратор обновил событие {}", eventId);
+        log.info("Администратор обновил событие {}", result);
         return result;
     }
 }

@@ -8,11 +8,13 @@ import ru.practicum.model.dto.client.EndpointHit;
 import ru.practicum.model.dto.client.ViewStats;
 import ru.practicum.model.dto.client.ViewStatsRequest;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
 @Component
 public class StatsClient {
+    private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final RestTemplate restTemplate;
     private final String statsServiceUri;
 
@@ -30,7 +32,9 @@ public class StatsClient {
     }
 
     public List<ViewStats> getStats(ViewStatsRequest request) {
-        StringBuilder url = new StringBuilder(statsServiceUri + "/stats?start=" + request.getStart() + "&end=" + request.getEnd() +
+        StringBuilder url = new StringBuilder(statsServiceUri + "/stats?start=" +
+                request.getStart().format(DTF) + "&end=" +
+                request.getEnd().format(DTF) +
                 "&unique=" + request.isUnique());
 
         if (request.getUris() != null && !request.getUris().isEmpty()) {

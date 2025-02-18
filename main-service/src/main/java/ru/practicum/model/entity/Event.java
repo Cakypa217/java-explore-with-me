@@ -22,10 +22,10 @@ public class Event {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String annotation;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @ManyToOne
@@ -48,6 +48,10 @@ public class Event {
     private LocalDateTime publishedOn;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "lat", column = @Column(name = "location_lat")),
+            @AttributeOverride(name = "lon", column = @Column(name = "location_lon"))
+    })
     private Location location;
 
     @Column(nullable = false)

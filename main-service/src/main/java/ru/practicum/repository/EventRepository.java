@@ -41,7 +41,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                  Pageable pageable);
 
     @Query("""
-            SELECT e FROM Event e
+            SELECT DISTINCT e FROM Event e
+            LEFT JOIN FETCH e.category
+            LEFT JOIN FETCH e.initiator
             WHERE (:users IS NULL OR e.initiator.id IN :users)
             AND (:states IS NULL OR e.state IN :states)
             AND (:categories IS NULL OR e.category.id IN :categories)

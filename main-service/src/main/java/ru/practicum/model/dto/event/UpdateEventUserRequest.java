@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.model.enums.EventState;
+import ru.practicum.model.enums.StateAction;
 
 import java.time.LocalDateTime;
 
@@ -31,12 +32,11 @@ public class UpdateEventUserRequest {
 
     private Boolean paid;
 
-    @Builder.Default
-    private Long participantLimit = 0L;
+    private Long participantLimit;
 
     private Boolean requestModeration;
 
-    private EventState eventState;
+    private StateAction stateAction;
 
     @Size(min = 3, max = 120)
     private String title;
