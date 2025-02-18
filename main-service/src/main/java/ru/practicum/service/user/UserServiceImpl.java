@@ -3,9 +3,11 @@ package ru.practicum.service.user;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.UserMapper;
 import ru.practicum.model.dto.user.NewUserRequest;
 import ru.practicum.model.dto.user.UserDto;
@@ -43,13 +45,17 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto createUser(NewUserRequest newUserRequest) {
         log.info("Получен запрос на создание пользователя {}", newUserRequest);
+        try {
 
-        User user = userMapper.toUser(newUserRequest);
-        User savedUser = userRepository.save(user);
-        UserDto userDto = userMapper.toUserDto(savedUser);
+            User user = userMapper.toUser(newUserRequest);
+            User savedUser = userRepository.save(user);
+            UserDto userDto = userMapper.toUserDto(savedUser);
 
-        log.info("Создан пользователь {}", userDto);
-        return userDto;
+            log.info("Создан пользователь {}", userDto);
+            return userDto;
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Пользователь с таким email уже зарегистрирован");
+        }
     }
 
     @Override

@@ -3,6 +3,7 @@ package ru.practicum.service.category;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -54,13 +55,15 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDto createCategory(NewCategoryDto newCategoryDto) {
         log.info("Получен запрос на создание категории {}", newCategoryDto);
-
-        Category category = categoryMapper.toCategory(newCategoryDto);
-        Category savedCategory = categoryRepository.save(category);
-        CategoryDto categoryDto = categoryMapper.toCategoryDto(savedCategory);
-
-        log.info("Категория {} создана", categoryDto);
-        return categoryDto;
+        try {
+            Category category = categoryMapper.toCategory(newCategoryDto);
+            Category savedCategory = categoryRepository.save(category);
+            CategoryDto categoryDto = categoryMapper.toCategoryDto(savedCategory);
+            log.info("Категория {} создана", categoryDto);
+            return categoryDto;
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Категория с именем " + newCategoryDto.getName() + " уже существует");
+        }
     }
 
     @Override
@@ -79,14 +82,16 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDto updateCategory(Long catId, NewCategoryDto newCategoryDto) {
         log.info("Получен запрос на обновление категории с id {}", catId);
-
-        Category category = findById(catId);
-        category.setName(newCategoryDto.getName());
-        Category updatedCategory = categoryRepository.save(category);
-        CategoryDto categoryDto = categoryMapper.toCategoryDto(updatedCategory);
-
-        log.info("Категория с id {} обновлена: {} → {}", catId, category.getName(), updatedCategory.getName());
-        return categoryDto;
+        try {
+            Category category = findById(catId);
+            category.setName(newCategoryDto.getName());
+            Category updatedCategory = categoryRepository.save(category);
+            CategoryDto categoryDto = categoryMapper.toCategoryDto(updatedCategory);
+            log.info("Категория с id {} обновлена: {} → {}", catId, category.getName(), updatedCategory.getName());
+            return categoryDto;
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Категория с именем " + newCategoryDto.getName() + " уже существует");
+        }
     }
 
     @Override

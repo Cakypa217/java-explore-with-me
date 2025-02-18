@@ -124,7 +124,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
                 eventId, userId, updateEventUserRequest);
 
         Event event = findByInitiator(userId, eventId);
-        if (event.getState() != EventState.PENDING && event.getState() != EventState.PUBLISHED) {
+        if (event.getState() != EventState.PENDING && event.getState() != EventState.CANCELED) {
             throw new ConflictException("Обновить можно только ожидающие или отмененные события");
         }
         if (updateEventUserRequest.getEventDate() != null) {
