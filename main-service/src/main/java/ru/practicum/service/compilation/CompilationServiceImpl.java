@@ -69,8 +69,8 @@ public class CompilationServiceImpl implements CompilationService {
                 .orElseThrow(() -> new EntityNotFoundException("Подборка с id:" + compId + " не найдена"));
 
 
-        Compilation updateCompilation = compilationMapper.
-                updateCompilationFromDto(updateCompilationRequest, compilation);
+        Compilation updateCompilation = compilationMapper
+                .updateCompilationFromDto(updateCompilationRequest, compilation);
 
         if (updateCompilationRequest.getEvents() != null) {
             Set<Event> events = new HashSet<>(eventRepository.findAllById(updateCompilationRequest.getEvents()));

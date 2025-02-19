@@ -22,9 +22,9 @@ public interface RequestRepository extends JpaRepository<ParticipationRequest, L
     long countByEventIdAndStatus(Long eventId, ParticipationStatus status);
 
     @Query("""
-            SELECT r.event.id, COUNT(r) 
-            FROM ParticipationRequest r 
-            WHERE r.status = 'CONFIRMED' 
+            SELECT r.event.id, COUNT(r)
+            FROM ParticipationRequest r
+            WHERE r.status = 'CONFIRMED'
             AND r.event.id IN :eventIds
             GROUP BY r.event.id
             """)
