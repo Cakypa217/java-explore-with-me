@@ -1,7 +1,7 @@
 package ru.practicum.mapper;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.exception.ForbiddenException;
+import ru.practicum.exception.BadRequestException;
 import ru.practicum.model.dto.event.NewEventDto;
 import ru.practicum.model.dto.event.UpdateEventAdminRequest;
 import ru.practicum.model.dto.event.UpdateEventUserRequest;
@@ -12,9 +12,6 @@ import ru.practicum.model.enums.EventState;
 
 import java.time.LocalDateTime;
 
-import static ru.practicum.model.enums.StateAction.CANCEL_REVIEW;
-import static ru.practicum.model.enums.StateAction.SEND_TO_REVIEW;
-
 @Component
 public class ImplEventMapper {
 
@@ -24,9 +21,10 @@ public class ImplEventMapper {
         event.setDescription(newEventDto.getDescription());
         event.setEventDate(newEventDto.getEventDate());
         event.setLocation(new Location(newEventDto.getLocation().getLat(), newEventDto.getLocation().getLon()));
-        event.setPaid(newEventDto.getPaid());
-        event.setParticipantLimit(newEventDto.getParticipantLimit() == null ? 0 : newEventDto.getParticipantLimit());
-        event.setRequestModeration(newEventDto.getRequestModeration());
+        event.setPaid(newEventDto.getPaid() != null ? newEventDto.getPaid() : false);
+        event.setParticipantLimit(newEventDto.getParticipantLimit() != null ? newEventDto.getParticipantLimit() : 0);
+        event.setRequestModeration(newEventDto.getRequestModeration() != null
+                ? newEventDto.getRequestModeration() : true);
         event.setTitle(newEventDto.getTitle());
         event.setState(EventState.PENDING);
         return event;
@@ -35,7 +33,7 @@ public class ImplEventMapper {
     public Event userApdateEvent(UpdateEventUserRequest updateEventUserRequest, Event event) {
         if (updateEventUserRequest.getEventDate() != null) {
             if (updateEventUserRequest.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                throw new ForbiddenException("Время события должно быть не раньше чем через 2 часа.");
+                throw new BadRequestException("Время события должно быть не раньше чем через 2 часа.");
             }
             event.setEventDate(updateEventUserRequest.getEventDate());
         }
@@ -89,7 +87,7 @@ public class ImplEventMapper {
         }
         if (updateEventAdminRequest.getEventDate() != null) {
             if (updateEventAdminRequest.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                throw new ForbiddenException("Время события должно быть не раньше чем через 2 часа.");
+                throw new BadRequestException("Время события должно быть не раньше чем через 2 часа.");
             }
             event.setEventDate(updateEventAdminRequest.getEventDate());
         }

@@ -16,9 +16,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-    /**
-     * Ошибка 400: Ошибка валидации входных данных
-     */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         List<String> errors = ex.getBindingResult().getFieldErrors()
@@ -50,9 +48,7 @@ public class ErrorHandler {
         log.warn("Bad request error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
-    /**
-     * Ошибка 403: Запрещённая операция
-     */
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex) {
         ErrorResponse errorResponse = ErrorResponse.builder()
@@ -66,9 +62,6 @@ public class ErrorHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
-    /**
-     * Ошибка 404: Объект не найден
-     */
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFoundException(EntityNotFoundException ex) {
         ErrorResponse errorResponse = ErrorResponse.builder()
@@ -82,9 +75,6 @@ public class ErrorHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
-    /**
-     * Ошибка 409: Нарушение целостности данных (дубликаты, FK)
-     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex) {
         ErrorResponse errorResponse = ErrorResponse.builder()
@@ -110,5 +100,4 @@ public class ErrorHandler {
         log.warn("Conflict error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
-
 }

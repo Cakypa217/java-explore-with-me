@@ -50,14 +50,14 @@ public class PrivateEventServiceImpl implements PrivateEventService {
 
     @Override
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
-        log.info("Получен запрос на создание события {}", newEventDto);
+        log.info("Запрос на создание события {} пользователем под id: {}", newEventDto, userId);
 
         User user = userService.findById(userId);
         Category category = categoryService.findById(newEventDto.getCategory());
 
         LocalDateTime now = LocalDateTime.now();
         if (newEventDto.getEventDate().isBefore(now.plusHours(2))) {
-            throw new ConflictException("Время события должна быть не раньше чем через 2 часа.");
+            throw new BadRequestException("Время события должна быть не раньше чем через 2 часа.");
         }
 
         Event event = implEventMapper.toEvent(newEventDto);
@@ -70,41 +70,40 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         Event savedEvent = eventRepository.save(event);
         EventFullDto eventFullDto = eventMapper.toEventFullDto(savedEvent);
 
-        log.info("Событие {} создано", savedEvent);
-        log.info("Событие {} создано", eventFullDto);
+        log.info("Создано событие {}", eventFullDto);
         return eventFullDto;
     }
 
     @Override
     public List<EventShortDto> getEvents(Long userId, Integer from, Integer size) {
-        log.info("Получен запрос на получение событий пользователя с id = {}", userId);
+        log.info("Запрос на получение событий пользователя с id = {} и параметрами from: {}, size: {}",
+                userId, from, size);
 
         PageRequest pageRequest = PageRequest.of(from / size, size);
         List<EventShortDto> eventShortDtos = eventRepository.findAllByInitiatorId(userId, pageRequest)
                 .map(eventMapper::toEventShortDto)
                 .getContent();
 
-        log.info("Получен список событий пользователя с id = {}, количество: {}", userId, eventShortDtos.size());
+        log.info("Получен список событий пользователя с id = {}, количеством: {}", userId, eventShortDtos.size());
         return eventShortDtos;
     }
 
     @Override
     public EventFullDto getEventById(Long userId, Long eventId) {
-        log.info("Получен запрос на получение события с id = {} пользователя с id = {}", eventId, userId);
+        log.info("Запрос на получение события с id = {} пользователя с id = {}", eventId, userId);
 
         Event event = eventRepository.findByInitiatorIdAndId(userId, eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Событие не найдено"));
 
         EventFullDto eventFullDto = eventMapper.toEventFullDto(event);
 
-        log.info("Получен событие: {}", eventFullDto);
+        log.info("Получено событие: {}", eventFullDto);
         return eventFullDto;
     }
 
     @Override
     public List<ParticipationRequestDto> getRequests(Long userId, Long eventId) {
-        log.info("Получен запрос на получение запросов на участие в событии с id = {} пользователя с id = {}",
-                eventId, userId);
+        log.info("Получение запросов на участие в событии с id = {} пользователя с id = {}", eventId, userId);
 
         Event event = findByInitiator(userId, eventId);
 
@@ -114,13 +113,13 @@ public class PrivateEventServiceImpl implements PrivateEventService {
                 .map(requestMapper::toParticipationRequestDto)
                 .collect(Collectors.toList());
 
-        log.info("Найдено {} запросов на участие в событии с id = {}", requestDtos.size(), eventId);
+        log.info("Найдено {} запросов на участие в событии с id: {}", requestDtos.size(), eventId);
         return requestDtos;
     }
 
     @Override
     public EventFullDto updateEvent(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
-        log.info("Получен запрос на обновление события с id = {} пользователя с id = {} на {}",
+        log.info("Запрос на обновление события с id: {} пользователя с id: {} на {}",
                 eventId, userId, updateEventUserRequest);
 
         Event event = findByInitiator(userId, eventId);
@@ -130,7 +129,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         if (updateEventUserRequest.getEventDate() != null) {
             LocalDateTime now = LocalDateTime.now();
             if (updateEventUserRequest.getEventDate().isBefore(now.plusHours(2))) {
-                throw new ConflictException("Время события должна быть не раньше чем через 2 часа.");
+                throw new BadRequestException("Время события должна быть не раньше чем через 2 часа.");
             }
         }
 
@@ -144,7 +143,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         Event updatedEvent = eventRepository.save(updatedEv);
         EventFullDto eventFullDto = eventMapper.toEventFullDto(updatedEvent);
 
-        log.info("Событие с id = {} обновлено на {} ", eventId, eventFullDto);
+        log.info("Событие с id: {} обновлено на {} ", eventId, eventFullDto);
         return eventFullDto;
     }
 
@@ -152,7 +151,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     @Transactional
     public EventRequestStatusUpdateResult updateRequestStatus(
             Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
-        log.info("Обновление статусов заявок на участие в событии id={} пользователем id={}", eventId, userId);
+        log.info("Обновление статусов заявок на участие в событии id: {} пользователем id: {}", eventId, userId);
 
         Event event = findByInitiator(userId, eventId);
 
@@ -209,13 +208,12 @@ public class PrivateEventServiceImpl implements PrivateEventService {
                     .map(requestMapper::toParticipationRequestDto)
                     .toList();
 
-            log.info("Подтверждены все заявки (лимит участников = 0) для события id={}", event.getId());
+            log.info("Подтверждены все заявки (лимит участников = 0) для события id: {}", event.getId());
             return new EventRequestStatusUpdateResult(confirmedDtos, Collections.emptyList());
         }
 
         long confirmedCount = requestRepository.countByEventIdAndStatus(event.getId(), ParticipationStatus.CONFIRMED);
         long availableSlots = event.getParticipantLimit() - confirmedCount;
-
 
         if (availableSlots <= 0) {
             throw new ConflictException("Лимит участников исчерпан, нельзя подтвердить больше заявок.");
@@ -240,7 +238,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
                 confirmedRequests.stream().map(requestMapper::toParticipationRequestDto).toList(),
                 rejectedRequests.stream().map(requestMapper::toParticipationRequestDto).toList());
 
-        log.info("Подтверждено {} заявок, отклонено {} для события id={}",
+        log.info("Подтверждено {} заявок, отклонено {} для события id: {}",
                 confirmedRequests.size(), rejectedRequests.size(), event.getId());
 
         return result;

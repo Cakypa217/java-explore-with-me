@@ -4,7 +4,6 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.client.StatsClient;
 import ru.practicum.exception.BadRequestException;
@@ -37,13 +36,13 @@ public class PublicEventServiceImpl implements PublicEventService {
 
     @Override
     public EventFullDto getEventById(Long eventId, HttpServletRequest request) {
-        log.info("Получен запрос на получение события с id={}", eventId);
+        log.info("Запрос на получение события с id: {}", eventId);
 
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Событие с id=" + eventId + " не найдено"));
 
         if (!event.getState().equals(EventState.PUBLISHED)) {
-            throw new BadRequestException("Событие ещё не опубликовано");
+            throw new EntityNotFoundException("Событие ещё не опубликовано");
         }
 
         statsClient.hit(EndpointHit.builder()
@@ -61,7 +60,6 @@ public class PublicEventServiceImpl implements PublicEventService {
                 .build());
 
         long views = stats.isEmpty() ? 0 : stats.getFirst().getHits();
-
         long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, ParticipationStatus.CONFIRMED);
 
         EventFullDto eventFullDto = eventMapper.toEventFullDto(event);
@@ -77,7 +75,18 @@ public class PublicEventServiceImpl implements PublicEventService {
                                       LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                       Boolean onlyAvailable, EventSort sort, Integer from, Integer size,
                                       HttpServletRequest request) {
-        log.info("Получен запрос на получение событий");
+        log.info("Запрос на получение событий");
+
+        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
+            throw new BadRequestException("Дата начала не может быть позже даты окончания");
+        }
+
+        if (rangeStart == null) {
+            rangeStart = LocalDateTime.now();
+        }
+        if (rangeEnd == null) {
+            rangeEnd = LocalDateTime.now().plusYears(5);
+        }
 
         statsClient.hit(EndpointHit.builder()
                 .app("main-service")
@@ -86,15 +95,8 @@ public class PublicEventServiceImpl implements PublicEventService {
                 .timestamp(LocalDateTime.now())
                 .build());
 
-        if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
-        }
-        if (rangeEnd == null) {
-            rangeEnd = LocalDateTime.now().plusYears(1);
-        }
-
         List<Event> events = eventRepository.findAllByFilters(text, categories, paid,
-                rangeStart, rangeEnd, onlyAvailable, PageRequest.of(from / size, size));
+                rangeStart, rangeEnd, onlyAvailable, from, size);
 
         if (events.isEmpty()) {
             log.info("По заданным фильтрам события не найдены");
@@ -116,7 +118,9 @@ public class PublicEventServiceImpl implements PublicEventService {
 
         Map<Long, Long> confirmedRequests = events.isEmpty()
                 ? Collections.emptyMap()
-                : requestRepository.countConfirmedRequestsByEventIds(events.stream().map(Event::getId).toList());
+                :  requestRepository.countConfirmedRequestsByEventIds(events.stream().map(Event::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(o -> (Long) o[0], o -> (Long) o[1]));
 
         List<EventShortDto> result = events.stream()
                 .peek(event -> {

@@ -32,19 +32,28 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public ParticipationRequestDto createRequest(long userId, long eventId) {
-        log.info("Запрос на участие в событии с id = {} от пользователя с id = {}", eventId, userId);
+        log.info("Запрос на участие в событии с id: {} от пользователя с id: {}", eventId, userId);
 
         Event event = privateEventService.findById(eventId);
         User user = userService.findById(userId);
         validateForCreate(userId, event);
 
-        boolean needModeration = event.getRequestModeration();
+        boolean needModeration = Boolean.TRUE.equals(event.getRequestModeration());
+        log.info("Модерация нужна: {}, Лимит участников: {}", needModeration, event.getParticipantLimit());
+
         ParticipationRequest participationRequest = new ParticipationRequest();
         participationRequest.setEvent(event);
         participationRequest.setRequester(user);
-        participationRequest.setStatus(needModeration ? ParticipationStatus.PENDING : ParticipationStatus.CONFIRMED);
+
+        if (!needModeration || event.getParticipantLimit() == 0) {
+            participationRequest.setStatus(ParticipationStatus.CONFIRMED);
+        } else {
+            participationRequest.setStatus(ParticipationStatus.PENDING);
+        }
+
         participationRequest.setCreated(LocalDateTime.now());
 
+        log.info("Статус перед сохранением: {}", participationRequest.getStatus());
 
         ParticipationRequest savedRequest = requestRepository.save(participationRequest);
         ParticipationRequestDto participationRequestDto = requestMapper.toParticipationRequestDto(savedRequest);

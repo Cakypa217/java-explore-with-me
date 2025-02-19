@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.model.dto.category.CategoryDto;
 import ru.practicum.model.dto.category.NewCategoryDto;
-import ru.practicum.model.dto.compilation.UpdateCompilationRequest;
 import ru.practicum.service.category.CategoryService;
 
 @RestController

@@ -27,7 +27,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryDto> getAll(Integer from, Integer size) {
-        log.info("Получен запрос на получение списка категорий");
+        log.info("Запрос на получение списка категорий с параметрами from={}, size={}", from, size);
 
         PageRequest pageRequest = PageRequest.of(from / size, size);
         Page<Category> categories = categoryRepository.findAll(pageRequest);
@@ -43,7 +43,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto getCategoryById(Long catId) {
-        log.info("Получен запрос на получение категории с id {}", catId);
+        log.info("Запрос на получение категории с id {}", catId);
 
         Category category = findById(catId);
         CategoryDto categoryDto = categoryMapper.toCategoryDto(category);
@@ -54,7 +54,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto createCategory(NewCategoryDto newCategoryDto) {
-        log.info("Получен запрос на создание категории {}", newCategoryDto);
+        log.info("Запрос на создание категории {}", newCategoryDto);
         try {
             Category category = categoryMapper.toCategory(newCategoryDto);
             Category savedCategory = categoryRepository.save(category);
@@ -68,7 +68,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long catId) {
-        log.info("Получен запрос на удаление категории с id {}", catId);
+        log.info("Запрос на удаление категории с id {}", catId);
         findById(catId);
 
         if (eventRepository.existsByCategoryId(catId)) {
@@ -81,7 +81,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto updateCategory(Long catId, NewCategoryDto newCategoryDto) {
-        log.info("Получен запрос на обновление категории с id {}", catId);
+        log.info("Запрос на обновление категории с id {}", catId);
         try {
             Category category = findById(catId);
             category.setName(newCategoryDto.getName());

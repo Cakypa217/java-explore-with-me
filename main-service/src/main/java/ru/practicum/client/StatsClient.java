@@ -18,7 +18,8 @@ public class StatsClient {
     private final RestTemplate restTemplate;
     private final String statsServiceUri;
 
-    public StatsClient(RestTemplate restTemplate, @Value("${services.stats-service.uri:http://stats-server:9090}") String statsServiceUri) {
+    public StatsClient(RestTemplate restTemplate,
+                       @Value("${services.stats-service.uri:http://stats-server:9090}") String statsServiceUri) {
         this.restTemplate = restTemplate;
         this.statsServiceUri = statsServiceUri;
     }

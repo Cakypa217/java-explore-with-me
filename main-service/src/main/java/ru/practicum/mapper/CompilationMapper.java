@@ -27,12 +27,13 @@ public class CompilationMapper {
     public Compilation toCompilation(NewCompilationDto newCompilationDto, Set<Event> events) {
         Compilation compilation = new Compilation();
         compilation.setTitle(newCompilationDto.getTitle());
-        compilation.setPinned(newCompilationDto.getPinned());
+        compilation.setPinned(newCompilationDto.getPinned() != null ? newCompilationDto.getPinned() : false);
         compilation.setEvents(events);
         return compilation;
     }
 
-    public Compilation updateCompilationFromDto(UpdateCompilationRequest updateCompilationRequest, Compilation compilation) {
+    public Compilation updateCompilationFromDto(UpdateCompilationRequest updateCompilationRequest,
+                                                Compilation compilation) {
         if (updateCompilationRequest.getTitle() != null) {
             compilation.setTitle(updateCompilationRequest.getTitle());
         }

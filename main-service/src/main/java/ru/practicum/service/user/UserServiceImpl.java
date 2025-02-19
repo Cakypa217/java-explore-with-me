@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getUsers(List<Long> ids, Integer from, Integer size) {
-        log.info("Получен запрос на получение пользователей");
+        log.info("Запрос на получение пользователей с параметрами: ids={}, from={}, size={}", ids, from, size);
 
         PageRequest pageRequest = PageRequest.of(from / size, size);
 
@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(NewUserRequest newUserRequest) {
-        log.info("Получен запрос на создание пользователя {}", newUserRequest);
+        log.info("Запрос на создание пользователя {}", newUserRequest);
         try {
 
             User user = userMapper.toUser(newUserRequest);

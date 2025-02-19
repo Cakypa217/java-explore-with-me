@@ -2,7 +2,6 @@ package ru.practicum.service.event.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.client.StatsClient;
 import ru.practicum.exception.ConflictException;
@@ -15,7 +14,6 @@ import ru.practicum.model.dto.event.UpdateEventAdminRequest;
 import ru.practicum.model.entity.Category;
 import ru.practicum.model.entity.Event;
 import ru.practicum.model.enums.EventState;
-import ru.practicum.repository.CategoryRepository;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.RequestRepository;
 import ru.practicum.service.category.CategoryService;
@@ -25,9 +23,6 @@ import ru.practicum.service.event.interfaces.PrivateEventService;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static ru.practicum.model.enums.EventState.*;
-
 
 @Slf4j
 @Service
@@ -45,14 +40,15 @@ public class AdminEventServiceImpl implements AdminEventService {
     @Override
     public List<EventFullDto> getEvents(List<Long> users, List<String> states, List<Long> categories,
                                         LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
-        log.info("Получение событий администратором с кретериями: " +
-                "users: {}, states: {}, categories: {}, rangeStart: {}, rangeEnd: {}, from: {}, size: {}",
-        users, states, categories, rangeStart, rangeEnd, from, size);
+        log.info("Получение событий администратором с критериями: " +
+                        "users: {}, states: {}, categories: {}, rangeStart: {}, rangeEnd: {}, from: {}, size: {}",
+                users, states, categories, rangeStart, rangeEnd, from, size);
+
         if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
+            rangeStart = LocalDateTime.now().minusYears(1);
         }
         if (rangeEnd == null) {
-            rangeEnd = LocalDateTime.now().plusYears(100);
+            rangeEnd = LocalDateTime.now().plusYears(5);
         }
         if (users == null) {
             users = Collections.emptyList();
@@ -64,8 +60,13 @@ public class AdminEventServiceImpl implements AdminEventService {
             categories = Collections.emptyList();
         }
 
-        List<Event> events = eventRepository.findAllByAdmin(users, states, categories, rangeStart,
-                rangeEnd, PageRequest.of(from, size));
+        List<EventState> eventStates = states.stream()
+                .map(EventState::valueOf)
+                .toList();
+
+        List<Event> events = eventRepository.findAllByAdmin(users, eventStates.stream()
+                .map(EventState::name)
+                .collect(Collectors.toList()), categories, rangeStart, rangeEnd, from, size);
 
         if (events.isEmpty()) {
             log.info("По заданным фильтрам события не найдены");
@@ -87,7 +88,9 @@ public class AdminEventServiceImpl implements AdminEventService {
 
         Map<Long, Long> confirmedRequests = events.isEmpty()
                 ? Collections.emptyMap()
-                : requestRepository.countConfirmedRequestsByEventIds(events.stream().map(Event::getId).toList());
+                : requestRepository.countConfirmedRequestsByEventIds(events.stream().map(Event::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(o -> (Long) o[0], o -> (Long) o[1]));
 
         List<EventFullDto> result = events.stream()
                 .peek(event -> {
@@ -99,6 +102,7 @@ public class AdminEventServiceImpl implements AdminEventService {
                 })
                 .map(eventMapper::toEventFullDto)
                 .toList();
+        log.info("Администратором получено {} событий", result.size());
         return result;
     }
 
@@ -119,7 +123,8 @@ public class AdminEventServiceImpl implements AdminEventService {
             switch (updateRequest.getStateAction()) {
                 case PUBLISH_EVENT:
                     if (event.getState() != EventState.PENDING) {
-                        throw new ConflictException("Нельзя опубликовать событие, так как оно не в статусе ожидания публикации");
+                        throw new ConflictException("Нельзя опубликовать событие," +
+                                " так как оно не в статусе ожидания публикации");
                     }
                     event.setState(EventState.PUBLISHED);
                     event.setPublishedOn(LocalDateTime.now());

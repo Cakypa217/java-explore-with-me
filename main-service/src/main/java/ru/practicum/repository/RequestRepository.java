@@ -8,7 +8,6 @@ import ru.practicum.model.entity.ParticipationRequest;
 import ru.practicum.model.enums.ParticipationStatus;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -20,10 +19,6 @@ public interface RequestRepository extends JpaRepository<ParticipationRequest, L
 
     Optional<ParticipationRequest> findByRequesterIdAndEventId(Long requesterId, Long eventId);
 
-    long countByEventId(Long eventId);
-
-    long countByEventIdAndStatus(long eventId, ParticipationStatus status);
-
     long countByEventIdAndStatus(Long eventId, ParticipationStatus status);
 
     @Query("""
@@ -33,5 +28,5 @@ public interface RequestRepository extends JpaRepository<ParticipationRequest, L
             AND r.event.id IN :eventIds
             GROUP BY r.event.id
             """)
-    Map<Long, Long> countConfirmedRequestsByEventIds(@Param("eventIds") List<Long> eventIds);
+    List<Object[]> countConfirmedRequestsByEventIds(@Param("eventIds") List<Long> eventIds);
 }

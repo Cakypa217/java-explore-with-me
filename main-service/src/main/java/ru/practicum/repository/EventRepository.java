@@ -22,59 +22,43 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     Boolean existsByCategoryId(Long categoryId);
 
-    @Query("""
-            SELECT e FROM Event e
+    @Query(value = """
+            SELECT e.* FROM events e
             WHERE e.state = 'PUBLISHED'
             AND (:text IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', :text, '%'))
             OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%')))
-            AND (:categories IS NULL OR e.category.id IN :categories)
+            AND (COALESCE(:categories) IS NULL OR e.category_id IN (:categories))
             AND (:paid IS NULL OR e.paid = :paid)
-            AND (e.eventDate BETWEEN :rangeStart AND COALESCE(:rangeEnd, e.eventDate))
-            AND (:onlyAvailable = false OR (e.participantLimit = 0 OR e.confirmedRequests < e.participantLimit))
-            """)
-    List<Event> findAllByFilters(@Param("text") String text,
-                                 @Param("categories") List<Long> categories,
-                                 @Param("paid") Boolean paid,
-                                 @Param("rangeStart") LocalDateTime rangeStart,
-                                 @Param("rangeEnd") LocalDateTime rangeEnd,
-                                 @Param("onlyAvailable") Boolean onlyAvailable,
-                                 Pageable pageable);
+            AND (e.event_date BETWEEN :rangeStart AND COALESCE(:rangeEnd, e.event_date))
+            AND (:onlyAvailable = false OR (e.participant_limit = 0 OR e.confirmed_requests < e.participant_limit))
+            LIMIT :size OFFSET :from
+            """, nativeQuery = true)
+    List<Event> findAllByFilters(
+            @Param("text") String text,
+            @Param("categories") List<Long> categories,
+            @Param("paid") Boolean paid,
+            @Param("rangeStart") LocalDateTime rangeStart,
+            @Param("rangeEnd") LocalDateTime rangeEnd,
+            @Param("onlyAvailable") Boolean onlyAvailable,
+            @Param("from") Integer from,
+            @Param("size") Integer size);
 
-    @Query("""
-            SELECT DISTINCT e FROM Event e
-            LEFT JOIN FETCH e.category
-            LEFT JOIN FETCH e.initiator
-            WHERE (:users IS NULL OR e.initiator.id IN :users)
-            AND (:states IS NULL OR e.state IN :states)
-            AND (:categories IS NULL OR e.category.id IN :categories)
-            AND (e.eventDate BETWEEN :rangeStart AND :rangeEnd)
-            """)
-    List<Event> findAllByAdmin(@Param("users") List<Long> users,
-                               @Param("states") List<String> states,
-                               @Param("categories") List<Long> categories,
-                               @Param("rangeStart") LocalDateTime rangeStart,
-                               @Param("rangeEnd") LocalDateTime rangeEnd,
-                               Pageable pageable);
-
-    @Modifying
-    @Query("UPDATE Event e SET e.confirmedRequests = e.confirmedRequests + 1 WHERE e.id = :eventId")
-    void incrementConfirmedRequests(@Param("eventId") Long eventId);
-
-    @Modifying
-    @Query("UPDATE Event e SET e.confirmedRequests = e.confirmedRequests - 1 WHERE e.id = :eventId AND e.confirmedRequests > 0")
-    void decrementConfirmedRequests(@Param("eventId") Long eventId);
-
-//    @Query("""
-//        SELECT e FROM Event e
-//        WHERE (:users IS NULL OR e.initiator.id IN :users OR :users = '[]')
-//        AND (:states IS NULL OR e.state IN :states OR :states = '[]')
-//        AND (:categories IS NULL OR e.category.id IN :categories OR :categories = '[]')
-//        AND (e.eventDate BETWEEN :rangeStart AND :rangeEnd)
-//        """)
-//    List<Event> findAllByAdmin(@Param("users") List<Long> users,
-//                               @Param("states") List<String> states,
-//                               @Param("categories") List<Long> categories,
-//                               @Param("rangeStart") LocalDateTime rangeStart,
-//                               @Param("rangeEnd") LocalDateTime rangeEnd,
-//                               Pageable pageable);
+    @Query(value = """
+            SELECT DISTINCT e.* FROM events e
+            LEFT JOIN categories c ON c.id = e.category_id
+            LEFT JOIN users u ON u.id = e.initiator_id
+            WHERE (COALESCE(:users) IS NULL OR e.initiator_id IN (:users))
+            AND (COALESCE(:states) IS NULL OR e.state IN (:states))
+            AND (COALESCE(:categories) IS NULL OR e.category_id IN (:categories))
+            AND (e.event_date BETWEEN :rangeStart AND :rangeEnd)
+            LIMIT :size OFFSET :from
+            """, nativeQuery = true)
+    List<Event> findAllByAdmin(
+            @Param("users") List<Long> users,
+            @Param("states") List<String> states,
+            @Param("categories") List<Long> categories,
+            @Param("rangeStart") LocalDateTime rangeStart,
+            @Param("rangeEnd") LocalDateTime rangeEnd,
+            @Param("from") Integer from,
+            @Param("size") Integer size);
 }

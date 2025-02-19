@@ -23,10 +23,10 @@ public interface PrivateEventService {
 
     EventFullDto createEvent(Long userId, NewEventDto newEventDto);
 
-    EventRequestStatusUpdateResult updateRequestStatus(Long userId, Long eventId,
-                                                       EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest);
-
     Event findById(Long eventId);
 
     Event findByInitiator(Long eventId, Long userId);
+
+    EventRequestStatusUpdateResult updateRequestStatus(Long userId, Long eventId,
+                                                       EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest);
 }
