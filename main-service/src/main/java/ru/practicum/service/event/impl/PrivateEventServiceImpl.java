@@ -1,11 +1,11 @@
 package ru.practicum.service.event.impl;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.EventMapper;
@@ -38,8 +38,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PrivateEventServiceImpl implements PrivateEventService {
     private final EventRepository eventRepository;
     private final UserService userService;
@@ -50,6 +50,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     private final CustomEventMapper customEventMapper;
 
     @Override
+    @Transactional
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
         log.info("Запрос на создание события {} пользователем под id: {}", newEventDto, userId);
 
@@ -119,6 +120,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     }
 
     @Override
+    @Transactional
     public EventFullDto updateEvent(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
         log.info("Запрос на обновление события с id: {} пользователя с id: {} на {}",
                 eventId, userId, updateEventUserRequest);
@@ -149,6 +151,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     }
 
     @Override
+    @Transactional
     public EventRequestStatusUpdateResult updateRequestStatus(
             Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
         log.info("Обновление статусов заявок на участие в событии id: {} пользователем id: {}", eventId, userId);

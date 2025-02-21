@@ -1,9 +1,9 @@
 package ru.practicum.service.event.impl;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.StatsClient;
 import ru.practicum.ViewStats;
 import ru.practicum.ViewStatsRequest;
@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AdminEventServiceImpl implements AdminEventService {
     private final EventRepository eventRepository;
     private final CategoryService categoryService;
@@ -109,6 +109,7 @@ public class AdminEventServiceImpl implements AdminEventService {
     }
 
     @Override
+    @Transactional
     public EventFullDto updateEvent(Long eventId, UpdateEventAdminRequest updateRequest) {
         log.info("Администратор обновляет событие {}, на {}", eventId, updateRequest);
 

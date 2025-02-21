@@ -1,13 +1,13 @@
 package ru.practicum.service.category;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.CategoryMapper;
 import ru.practicum.model.dto.category.CategoryDto;
@@ -20,8 +20,8 @@ import java.util.List;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
@@ -55,6 +55,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public CategoryDto createCategory(NewCategoryDto newCategoryDto) {
         log.info("Запрос на создание категории {}", newCategoryDto);
         try {
@@ -69,6 +70,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public void deleteCategory(Long catId) {
         log.info("Запрос на удаление категории с id {}", catId);
         findById(catId);
@@ -82,6 +84,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public CategoryDto updateCategory(Long catId, NewCategoryDto newCategoryDto) {
         log.info("Запрос на обновление категории с id {}", catId);
         try {

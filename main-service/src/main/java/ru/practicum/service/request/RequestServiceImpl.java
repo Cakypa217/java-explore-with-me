@@ -1,10 +1,10 @@
 package ru.practicum.service.request;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.RequestMapper;
 import ru.practicum.model.dto.participation.ParticipationRequestDto;
@@ -23,8 +23,8 @@ import java.util.List;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
     private final PrivateEventService privateEventService;
@@ -33,6 +33,7 @@ public class RequestServiceImpl implements RequestService {
     private final EventRepository eventRepository;
 
     @Override
+    @Transactional
     public ParticipationRequestDto createRequest(long userId, long eventId) {
         log.info("Запрос на участие в событии с id: {} от пользователя с id: {}", eventId, userId);
 
@@ -79,6 +80,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto cancelRequest(long userId, long requestId) {
         log.info("Получен запрос на отмену заявки с id = {} пользователя с id = {}", requestId, userId);
 

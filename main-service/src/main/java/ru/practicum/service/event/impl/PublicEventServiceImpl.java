@@ -2,10 +2,10 @@ package ru.practicum.service.event.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.StatsClient;
 import ru.practicum.ViewStats;
 import ru.practicum.ViewStatsRequest;
@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PublicEventServiceImpl implements PublicEventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;

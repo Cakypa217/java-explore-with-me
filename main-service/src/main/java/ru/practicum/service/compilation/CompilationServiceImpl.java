@@ -1,13 +1,13 @@
 package ru.practicum.service.compilation;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.mapper.CompilationMapper;
 import ru.practicum.mapper.EventMapper;
 import ru.practicum.model.dto.compilation.CompilationDto;
@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CompilationServiceImpl implements CompilationService {
     private final CompilationsRepository compilationsRepository;
     private final CompilationMapper compilationMapper;
@@ -36,6 +36,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final EventMapper eventMapper;
 
     @Override
+    @Transactional
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
         log.info("Запрос на создание подборки: {}", newCompilationDto);
 
@@ -57,6 +58,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
+    @Transactional
     public void deleteCompilation(Long compId) {
         log.info("Запрос на удаление подборки: {}", compId);
         compilationsRepository.deleteById(compId);
@@ -64,6 +66,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
+    @Transactional
     public CompilationDto updateCompilation(Long compId, UpdateCompilationRequest updateCompilationRequest) {
         log.info("Запрос на обновление подборки c id: {} , на {}", compId, updateCompilationRequest);
 
