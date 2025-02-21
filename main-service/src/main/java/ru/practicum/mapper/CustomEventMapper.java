@@ -13,7 +13,7 @@ import ru.practicum.model.enums.EventState;
 import java.time.LocalDateTime;
 
 @Component
-public class ImplEventMapper {
+public class CustomEventMapper {
 
     public Event toEvent(NewEventDto newEventDto) {
         Event event = new Event();

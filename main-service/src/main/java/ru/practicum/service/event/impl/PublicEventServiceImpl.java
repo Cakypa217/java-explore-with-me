@@ -2,15 +2,15 @@ package ru.practicum.service.event.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.client.StatsClient;
+import ru.practicum.StatsClient;
+import ru.practicum.ViewStats;
+import ru.practicum.ViewStatsRequest;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.mapper.EventMapper;
-import ru.practicum.model.dto.client.EndpointHit;
-import ru.practicum.model.dto.client.ViewStats;
-import ru.practicum.model.dto.client.ViewStatsRequest;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.EventShortDto;
 import ru.practicum.model.entity.Event;
@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PublicEventServiceImpl implements PublicEventService {
     private final EventRepository eventRepository;
@@ -45,12 +46,7 @@ public class PublicEventServiceImpl implements PublicEventService {
             throw new EntityNotFoundException("Событие ещё не опубликовано");
         }
 
-        statsClient.hit(EndpointHit.builder()
-                .app("main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build());
+        statsClient.hit(request);
 
         List<ViewStats> stats = statsClient.getStats(ViewStatsRequest.builder()
                 .start(event.getPublishedOn())
@@ -58,6 +54,7 @@ public class PublicEventServiceImpl implements PublicEventService {
                 .uris(List.of("/events/" + eventId))
                 .unique(true)
                 .build());
+
 
         long views = stats.isEmpty() ? 0 : stats.getFirst().getHits();
         long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, ParticipationStatus.CONFIRMED);
@@ -88,12 +85,7 @@ public class PublicEventServiceImpl implements PublicEventService {
             rangeEnd = LocalDateTime.now().plusYears(5);
         }
 
-        statsClient.hit(EndpointHit.builder()
-                .app("main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build());
+        statsClient.hit(request);
 
         List<Event> events = eventRepository.findAllByFilters(text, categories, paid,
                 rangeStart, rangeEnd, onlyAvailable, from, size);

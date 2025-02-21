@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.EventMapper;
-import ru.practicum.mapper.ImplEventMapper;
+import ru.practicum.mapper.CustomEventMapper;
 import ru.practicum.mapper.RequestMapper;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.EventShortDto;
@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PrivateEventServiceImpl implements PrivateEventService {
     private final EventRepository eventRepository;
@@ -46,7 +47,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     private final RequestRepository requestRepository;
     private final RequestMapper requestMapper;
     private final EventMapper eventMapper;
-    private final ImplEventMapper implEventMapper;
+    private final CustomEventMapper customEventMapper;
 
     @Override
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
@@ -60,7 +61,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
             throw new BadRequestException("Время события должна быть не раньше чем через 2 часа.");
         }
 
-        Event event = implEventMapper.toEvent(newEventDto);
+        Event event = customEventMapper.toEvent(newEventDto);
         event.setInitiator(user);
         event.setCategory(category);
         event.setCreatedOn(now);
@@ -133,7 +134,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
             }
         }
 
-        Event updatedEv = implEventMapper.userApdateEvent(updateEventUserRequest, event);
+        Event updatedEv = customEventMapper.userApdateEvent(updateEventUserRequest, event);
 
         if (updateEventUserRequest.getCategory() != null) {
             Category category = categoryService.findById(updateEventUserRequest.getCategory());
@@ -148,7 +149,6 @@ public class PrivateEventServiceImpl implements PrivateEventService {
     }
 
     @Override
-    @Transactional
     public EventRequestStatusUpdateResult updateRequestStatus(
             Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
         log.info("Обновление статусов заявок на участие в событии id: {} пользователем id: {}", eventId, userId);

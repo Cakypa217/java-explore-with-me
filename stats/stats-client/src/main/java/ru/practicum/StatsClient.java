@@ -8,9 +8,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,10 +31,10 @@ public class StatsClient {
     private final ObjectMapper json;
     private final HttpClient httpClient;
 
-    public StatsClient(@Value("${spring.application.name}") String aplication,
+    public StatsClient(@Value("${spring.application.name}") String application,
                        @Value("${services.stats-service.uri:http://localhost:9090}") String statsServiceUri,
                        ObjectMapper json) {
-        this.application = aplication;
+        this.application = application;
         this.statsServiceUri = statsServiceUri;
         this.json = json;
         this.httpClient = HttpClient.newBuilder()
@@ -87,8 +89,8 @@ public class StatsClient {
 
     private String toQueryString(ViewStatsRequest request) {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("start", request.getStart().format(DTF));
-        params.put("end", request.getEnd().format(DTF));
+        params.put("start", URLEncoder.encode(request.getStart().format(DTF), StandardCharsets.UTF_8));
+        params.put("end", URLEncoder.encode(request.getEnd().format(DTF), StandardCharsets.UTF_8));
         params.put("unique", String.valueOf(request.isUnique()));
 
         String paramString = params.entrySet().stream()
@@ -96,7 +98,9 @@ public class StatsClient {
                 .collect(Collectors.joining("&"));
 
         String uris = (request.getUris() != null && !request.getUris().isEmpty())
-                ? request.getUris().stream().map(uri -> "uris=" + uri).collect(Collectors.joining("&"))
+                ? request.getUris().stream()
+                .map(uri -> "uris=" + URLEncoder.encode(uri, StandardCharsets.UTF_8))
+                .collect(Collectors.joining("&"))
                 : "";
 
         return "?" + paramString + (uris.isEmpty() ? "" : "&" + uris);

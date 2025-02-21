@@ -1,14 +1,15 @@
 package ru.practicum.service.event.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.client.StatsClient;
+import ru.practicum.StatsClient;
+import ru.practicum.ViewStats;
+import ru.practicum.ViewStatsRequest;
 import ru.practicum.exception.ConflictException;
+import ru.practicum.mapper.CustomEventMapper;
 import ru.practicum.mapper.EventMapper;
-import ru.practicum.mapper.ImplEventMapper;
-import ru.practicum.model.dto.client.ViewStats;
-import ru.practicum.model.dto.client.ViewStatsRequest;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.UpdateEventAdminRequest;
 import ru.practicum.model.entity.Category;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class AdminEventServiceImpl implements AdminEventService {
     private final EventRepository eventRepository;
@@ -33,7 +35,7 @@ public class AdminEventServiceImpl implements AdminEventService {
     private final RequestRepository requestRepository;
     private final PrivateEventService privateEventService;
     private final EventMapper eventMapper;
-    private final ImplEventMapper implEventMapper;
+    private final CustomEventMapper customEventMapper;
     private final StatsClient statsClient;
 
 
@@ -148,7 +150,7 @@ public class AdminEventServiceImpl implements AdminEventService {
         if (updateRequest.getCategory() != null) {
             category = categoryService.findById(updateRequest.getCategory());
         }
-        implEventMapper.adminUpdateEvent(updateRequest, event, category);
+        customEventMapper.adminUpdateEvent(updateRequest, event, category);
         event = eventRepository.save(event);
         EventFullDto result = eventMapper.toEventFullDto(event);
 
