@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  application:
+    name: main-service
   datasource:
     url: jdbc:postgresql://main-db:5432/main
     username: main_user
@@ -22,8 +24,9 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
 
-stats-server:
-  url: http://stats-server:9090
+services:
+  stats-service:
+    uri: http://stats-server:9090
 
 logging:
   level:
