@@ -1,0 +1,1426 @@
+{
+	"info": {
+		"_postman_id": "f2d3b5dc-381e-40c9-8b0e-44e9abc524d4",
+		"name": "feature",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38607411"
+	},
+	"item": [
+		{
+			"name": "Comment",
+			"item": [
+				{
+					"name": "Создание публикации",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eid\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        // Добавляем комментарий к событию\r",
+									"        const commentText = \"Это мой комментарий к событию.\";\r",
+									"        const comment = await api.addComment(user.id, event.id, commentText);\r",
+									"        console.log(\"Добавленный комментарий:\", comment);\r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId\", comment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ответ должен быть успешным (201 Created)\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"const responseData = pm.response.json();\r",
+									"pm.test(\"Ответ должен содержать корректные данные\", function () {\r",
+									"    pm.expect(responseData).to.be.an('object');\r",
+									"\r",
+									"    pm.test(\"Поле id присутствует и является числом\", function () {\r",
+									"        pm.expect(responseData).to.have.property(\"id\").that.is.a('number');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле eventId присутствует и является числом\", function () {\r",
+									"        pm.expect(responseData).to.have.property(\"eventId\").that.is.a('number');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле text присутствует и является строкой\", function () {\r",
+									"        pm.expect(responseData).to.have.property(\"text\").that.is.a('string');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле created присутствует и является строкой\", function () {\r",
+									"        pm.expect(responseData).to.have.property(\"created\").that.is.a('string');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле updated присутствует и является строкой\", function () {\r",
+									"        pm.expect(responseData).to.have.property(\"updated\").that.is.a('string');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле user присутствует и является объектом\", function () {\r",
+									"        pm.expect(responseData).to.have.property(\"user\").that.is.an('object');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле user.id присутствует и является числом\", function () {\r",
+									"        pm.expect(responseData.user).to.have.property(\"id\").that.is.a('number');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Поле user.name присутствует и является строкой\", function () {\r",
+									"        pm.expect(responseData.user).to.have.property(\"name\").that.is.a('string');\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"eventId совпадает с ожидаемым значением\", function () {\r",
+									"        const expectedEventId = pm.collectionVariables.get(\"eid\");\r",
+									"        pm.expect(responseData.eventId).to.eql(expectedEventId);\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"user.id совпадает с ожидаемым userId\", function () {\r",
+									"        const expectedUserId = pm.collectionVariables.get(\"uid\");\r",
+									"        pm.expect(responseData.user.id).to.eql(expectedUserId);\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Текст комментария совпадает\", function () {\r",
+									"        const expectedText = \"Это мой комментарий к событию.\";\r",
+									"        pm.expect(responseData.text).to.eql(expectedText);\r",
+									"    });\r",
+									"\r",
+									"});\r",
+									"\r",
+									"if (responseData.id) {\r",
+									"    pm.environment.set(\"commentId\", responseData.id);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"eventId\": {{eid}},\r\n    \"text\": \"Это мой комментарий к событию.\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/:userId/events/:eventId/comments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								":userId",
+								"events",
+								":eventId",
+								"comments"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{uid}}"
+								},
+								{
+									"key": "eventId",
+									"value": "{{eid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Получение всех комментариев к событию",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eid\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const comment1 = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"        const createdComment1 = await api.addComment(user.id, event.id, comment1);\r",
+									"        console.log(\"Комментарий 1 создан:\", createdComment1);\r",
+									"\r",
+									"        const comment2 = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"        const createdComment2 = await api.addComment(user.id, event.id, comment2);\r",
+									"        console.log(\"Комментарий 2 создан:\", createdComment2);\r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId1\", createdComment1.id);\r",
+									"        pm.collectionVariables.set(\"commentId2\", createdComment2.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ответ должен быть успешным (200 OK)\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Ответ содержит массив с ожидаемыми полями\", function () {\r",
+									"    let jsonData = pm.response.json();\r",
+									"    \r",
+									"    pm.expect(jsonData).to.be.an(\"array\");\r",
+									"    pm.expect(jsonData.length).to.be.above(0);\r",
+									"    jsonData.forEach((item, index) => {\r",
+									"        pm.expect(item).to.have.property(\"id\");\r",
+									"        pm.expect(item).to.have.property(\"eventId\");\r",
+									"        pm.expect(item).to.have.property(\"user\");\r",
+									"        pm.expect(item).to.have.property(\"text\");\r",
+									"        pm.expect(item).to.have.property(\"created\");\r",
+									"        pm.expect(item).to.have.property(\"updated\");\r",
+									"\r",
+									"        console.log(`Объект ${index + 1}: `, item);\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Поля объектов в массиве имеют корректные типы\", function () {\r",
+									"    let jsonData = pm.response.json();\r",
+									"\r",
+									"    jsonData.forEach((item, index) => {\r",
+									"        pm.expect(item.id, `id в объекте ${index + 1}`).to.be.a(\"number\");\r",
+									"        pm.expect(item.eventId, `eventId в объекте ${index + 1}`).to.be.a(\"number\");\r",
+									"        pm.expect(item.text, `text в объекте ${index + 1}`).to.be.a(\"string\");\r",
+									"        pm.expect(item.user, `user в объекте ${index + 1}`).to.be.an(\"object\");\r",
+									"        pm.expect(item.user).to.have.property(\"id\").that.is.a(\"number\");\r",
+									"        pm.expect(item.user).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"\r",
+									"        pm.expect(new Date(item.created).toString(), `created в объекте ${index + 1}`).not.to.equal(\"Invalid Date\");\r",
+									"        pm.expect(new Date(item.updated).toString(), `updated в объекте ${index + 1}`).not.to.equal(\"Invalid Date\");\r",
+									"\r",
+									"        console.log(`Проверен объект ${index + 1}:`, item);\r",
+									"    });\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/users/{{uid}}/events/{{eid}}/comments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"{{uid}}",
+								"events",
+								"{{eid}}",
+								"comments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Получение комментария по id",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eid\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const comment = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"\r",
+									"        const createdComment = await api.addComment(user.id, event.id, comment);\r",
+									"        console.log(\"Комментарий 1 создан:\", createdComment);\r",
+									"\r",
+									"        pm.collectionVariables.set(\"11commentId\", createdComment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(e);\r",
+									"    }\r",
+									"}, 100);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const commentId = pm.collectionVariables.get(\"11commentId\");\r",
+									"\r",
+									"pm.test(\"Ответ должен быть успешным (200 OK)\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Ответ содержит ожидаемые поля\", function () {\r",
+									"    let jsonData = pm.response.json();\r",
+									"\r",
+									"    pm.expect(jsonData).to.have.property(\"id\", commentId);\r",
+									"    pm.expect(jsonData).to.have.property(\"eventId\").that.is.a(\"number\");\r",
+									"    pm.expect(jsonData).to.have.property(\"user\").that.is.an(\"object\");\r",
+									"    pm.expect(jsonData.user).to.have.property(\"id\").that.is.a(\"number\");\r",
+									"    pm.expect(jsonData.user).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"    pm.expect(jsonData).to.have.property(\"text\").that.is.a(\"string\");\r",
+									"    pm.expect(jsonData).to.have.property(\"created\");\r",
+									"    pm.expect(jsonData).to.have.property(\"updated\");\r",
+									"\r",
+									"    console.log(\"Полученный комментарий:\", jsonData);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Поля даты должны быть корректными\", function () {\r",
+									"    let jsonData = pm.response.json();\r",
+									"\r",
+									"    pm.expect(new Date(jsonData.created).toString(), \"Некорректная дата created\").not.to.equal(\"Invalid Date\");\r",
+									"    pm.expect(new Date(jsonData.updated).toString(), \"Некорректная дата updated\").not.to.equal(\"Invalid Date\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/users/{{uid}}/events/{{eid}}/comments/{{11commentId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"{{uid}}",
+								"events",
+								"{{eid}}",
+								"comments",
+								"{{11commentId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Обновление комментария",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid2\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eventId\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const comment = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"\r",
+									"        const createdComment = await api.addComment(user.id, event.id, comment);\r",
+									"        console.log(\"Комментарий 1 создан:\", createdComment);\r",
+									"        \r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId2\", createdComment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(\"Ошибка выполнения main():\", e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ответ должен быть успешным (200 OK)\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Ответ содержит ожидаемые поля\", function () {\r",
+									"    let jsonData = pm.response.json();\r",
+									"    let expectedCommentId = pm.collectionVariables.get(\"commentId2\");\r",
+									"\r",
+									"    pm.expect(jsonData).to.have.property(\"id\", expectedCommentId);\r",
+									"    pm.expect(jsonData).to.have.property(\"eventId\").that.is.a(\"number\");\r",
+									"    pm.expect(jsonData).to.have.property(\"user\").that.is.an(\"object\");\r",
+									"    pm.expect(jsonData.user).to.have.property(\"id\").that.is.a(\"number\");\r",
+									"    pm.expect(jsonData.user).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"    pm.expect(jsonData).to.have.property(\"text\").that.is.a(\"string\");\r",
+									"    pm.expect(jsonData.text).to.equal(\"Обновленный текст комментария\");\r",
+									"    pm.expect(jsonData).to.have.property(\"created\");\r",
+									"    pm.expect(jsonData).to.have.property(\"updated\");\r",
+									"\r",
+									"    console.log(\"Обновленный комментарий:\", jsonData);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Поля даты должны быть корректными\", function () {\r",
+									"    let jsonData = pm.response.json();\r",
+									"\r",
+									"    pm.expect(new Date(jsonData.created).toString(), \"Некорректная дата created\").not.to.equal(\"Invalid Date\");\r",
+									"    pm.expect(new Date(jsonData.updated).toString(), \"Некорректная дата updated\").not.to.equal(\"Invalid Date\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"text\": \"Обновленный текст комментария\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/{{uid2}}/events/{{eventId}}/comments/{{commentId2}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"{{uid2}}",
+								"events",
+								"{{eventId}}",
+								"comments",
+								"{{commentId2}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Удаление комментария",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid2\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eventId\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const comment = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"\r",
+									"        const createdComment = await api.addComment(user.id, event.id, comment);\r",
+									"        console.log(\"Комментарий 1 создан:\", createdComment);\r",
+									"        \r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId2\", createdComment.id);\r",
+									"        console.log(\"commentId2 в тесте перед удалением:\", pm.collectionVariables.get(\"commentId2\"));\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(\"Ошибка выполнения main():\", e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ответ должен содержать код статуса 204\", function () {\r",
+									"    pm.response.to.have.status(204);\r",
+									"});\r",
+									"\r",
+									"const commentId = pm.collectionVariables.get(\"commentId2\");\r",
+									"const userId = pm.collectionVariables.get(\"uid2\");\r",
+									"const eventId = pm.collectionVariables.get(\"eventId\");\r",
+									"\r",
+									"pm.test(\"Комментарий должен существовать перед удалением\", function () {\r",
+									"    const source = pm.collectionVariables.get(\"response\");\r",
+									"    pm.expect(source).to.be.an(\"object\"); \r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/users/{{uid2}}/events/{{eventId}}/comments/{{commentId2}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"{{uid2}}",
+								"events",
+								"{{eventId}}",
+								"comments",
+								"{{commentId2}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Validation",
+			"item": [
+				{
+					"name": "Добавление к несуществующему несуществующему событию",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eid\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const commentText = \"Это мой комментарий к событию.\";\r",
+									"        const comment = await api.addComment(user.id, event.id, commentText);\r",
+									"        console.log(\"Добавленный комментарий:\", comment);\r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId\", comment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ответ должен содержать код статуса 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"text\": \"Это мой комментарий к событию.\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/:userId/events/999/comments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								":userId",
+								"events",
+								"999",
+								"comments"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{uid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Добавление комментария без текста",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eid\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const commentText = \"Это мой комментарий к событию.\";\r",
+									"        const comment = await api.addComment(user.id, event.id, commentText);\r",
+									"        console.log(\"Добавленный комментарий:\", comment);\r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId\", comment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ответ должен содержать код статуса 400 и данные в формате json\", function () {\r",
+									"    pm.response.to.be.badRequest;    \r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"eventId\": {{eid}},\r\n    \"text\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/{{uid}}/events/{{eid}}/comments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"{{uid}}",
+								"events",
+								"{{eid}}",
+								"comments"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Conflict  Forbidden",
+			"item": [
+				{
+					"name": "Попытка добавить комментарий к неопубликованному событию",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eid\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        const commentText = \"Это мой комментарий к событию.\";\r",
+									"        const comment = await api.addComment(user.id, event.id, commentText);\r",
+									"        console.log(\"Добавленный комментарий:\", comment);\r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId\", comment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(e);\r",
+									"    }\r",
+									"}, 100);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Статус код должен быть 409\", function () {\r",
+									"    pm.response.to.have.status(409);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"eventId\": {{eid}},\r\n    \"text\": \"Это мой комментарий к событию.\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/:userId/events/:eventId/comments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								":userId",
+								"events",
+								":eventId",
+								"comments"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{uid}}"
+								},
+								{
+									"key": "eventId",
+									"value": "{{eid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Попытка изменить комментарий не автором",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid2\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eventId\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const comment = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"\r",
+									"        const createdComment = await api.addComment(user.id, event.id, comment);\r",
+									"        console.log(\"Комментарий 1 создан:\", createdComment);\r",
+									"        \r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId2\", createdComment.id);\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"// Запускаем `main()` с задержкой\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(\"Ошибка выполнения main():\", e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Статус код должен быть 403\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"text\": \"Обновленный текст комментария\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/999/events/{{eventId}}/comments/{{commentId2}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"999",
+								"events",
+								"{{eventId}}",
+								"comments",
+								"{{commentId2}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Попытка удалить комментарий не создателем события",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const main = async () => {\r",
+									"    const api = new API(pm);\r",
+									"    const rnd = new RandomUtils();\r",
+									"\r",
+									"    try {\r",
+									"        const user = await api.addUser(rnd.getUser());\r",
+									"        pm.collectionVariables.set(\"uid2\", user.id);\r",
+									"\r",
+									"        const category = await api.addCategory(rnd.getCategory());\r",
+									"\r",
+									"        let event = await api.addEvent(user.id, rnd.getEvent(category.id));\r",
+									"        pm.collectionVariables.set(\"eventId\", event.id);\r",
+									"        pm.collectionVariables.set(\"response\", event);\r",
+									"\r",
+									"        event = await api.publishEvent(event.id);\r",
+									"        console.log(\"Ответ API после обновления:\", event);\r",
+									"\r",
+									"        const comment = {\r",
+									"            text: rnd.getComment().text,\r",
+									"            eventId: event.id\r",
+									"        };\r",
+									"\r",
+									"        const createdComment = await api.addComment(user.id, event.id, comment);\r",
+									"        console.log(\"Комментарий 1 создан:\", createdComment);\r",
+									"        \r",
+									"\r",
+									"        pm.collectionVariables.set(\"commentId2\", createdComment.id);\r",
+									"        console.log(\"commentId2 в тесте перед удалением:\", pm.collectionVariables.get(\"commentId2\"));\r",
+									"\r",
+									"    } catch (err) {\r",
+									"        console.error(\"Ошибка при подготовке тестовых данных:\", err);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"setTimeout(async () => {\r",
+									"    try {\r",
+									"        await main();\r",
+									"    } catch (e) {\r",
+									"        console.error(\"Ошибка выполнения main():\", e);\r",
+									"    }\r",
+									"}, 100);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Статус код должен быть 403\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/users/999/events/{{eventId}}/comments/{{commentId2}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"999",
+								"events",
+								"{{eventId}}",
+								"comments",
+								"{{commentId2}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"API = class {\r",
+					"    constructor(postman, verbose = false, baseUrl = \"http://localhost:8080\") {\r",
+					"        this.baseUrl = baseUrl;\r",
+					"        this.pm = postman;\r",
+					"        this._verbose = verbose;\r",
+					"    }\r",
+					"\r",
+					"    async addUser(user, verbose=null) {\r",
+					"        return this.post(\"/admin/users\", user, \"Ошибка при добавлении нового пользователя: \", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async addCategory(category, verbose=null) {\r",
+					"        return this.post(\"/admin/categories\", category, \"Ошибка при добавлении новой категории: \", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async addEvent(userId, event, verbose=null) {\r",
+					"        return this.post(\"/users/\" + userId + \"/events\", event, \"Ошибка при добавлении нового события: \", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async addCompilation(compilation, verbose=null) {\r",
+					"        return this.post(\"/admin/compilations\", compilation, \"Ошибка при добавлении новой подборки: \", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async publishParticipationRequest(eventId, userId, verbose=null) {\r",
+					"        return this.post('/users/' + userId + '/requests?eventId=' + eventId, null, \"Ошибка при добавлении нового запроса на участие в событии\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async publishEvent(eventId, verbose=null) {\r",
+					"        return this.patch('/admin/events/' + eventId, {stateAction: \"PUBLISH_EVENT\"}, \"Ошибка при публикации события\", verbose);\r",
+					"    }\r",
+					"    \r",
+					"    async rejectEvent(eventId, verbose=null) {\r",
+					"        return this.patch('/admin/events/' + eventId, {stateAction: \"REJECT_EVENT\"}, \"Ошибка при отмене события\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async acceptParticipationRequest(eventId, userId, reqId, verbose=null) {\r",
+					"        return this.patch('/users/' + userId + '/events/' + eventId + '/requests', {requestIds:[reqId], status: \"CONFIRMED\"}, \"Ошибка при принятии заявки на участие в событии\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async findCategory(catId, verbose=null) {\r",
+					"        return this.get('/categories/' + catId, null, \"Ошибка при поиске категории по id\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async findCompilation(compId, verbose=null) {\r",
+					"        return this.get('/compilations/' + compId, null, \"Ошибка при поиске подборки по id\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async findEvent(eventId, verbose=null) {\r",
+					"        return this.get('/events/' + eventId, null, \"Ошибка при поиске события по id\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async findUser(userId, verbose=null) {\r",
+					"        return this.get('/admin/users?ids=' + userId, null, \"Ошибка при поиске пользователя по id\", verbose);\r",
+					"    }\r",
+					"\r",
+					"    async post(path, body, errorText = \"Ошибка при выполнении post-запроса: \", verbose=null) {\r",
+					"        return this.sendRequest(\"POST\", path, body, errorText, verbose);\r",
+					"    }\r",
+					"\r",
+					"    async patch(path, body = null, errorText = \"Ошибка при выполнении patch-запроса: \", verbose=null) {\r",
+					"        return this.sendRequest(\"PATCH\", path, body, errorText, verbose);\r",
+					"    }\r",
+					"\r",
+					"    async get(path, body = null, errorText = \"Ошибка при выполнении get-запроса: \", verbose=null) {\r",
+					"        return this.sendRequest(\"GET\", path, body, errorText, verbose);\r",
+					"    }\r",
+					"\r",
+					"    async addComment(userId, eventId, comment, verbose=null) {\r",
+					"        return this.post(\r",
+					"            `/users/${userId}/events/${eventId}/comments`,\r",
+					"            comment,\r",
+					"            \"Ошибка при добавлении комментария: \",\r",
+					"            verbose\r",
+					"        );\r",
+					"    }\r",
+					"\r",
+					"    async sendRequest(method, path, body=null, errorText = \"Ошибка при выполнении запроса: \", verbose=null) {\r",
+					"        return new Promise((resolve, reject) => {\r",
+					"            verbose = verbose == null ? this._verbose : verbose;\r",
+					"            const request = {\r",
+					"                url: this.baseUrl + path,\r",
+					"                method: method,\r",
+					"                body: body == null ? \"\" : JSON.stringify(body),\r",
+					"                header: { \"Content-Type\": \"application/json\" },\r",
+					"            };\r",
+					"            if(verbose) {\r",
+					"                console.log(\"Отправляю запрос: \", request);\r",
+					"            }\r",
+					"\r",
+					"            try {\r",
+					"                this.pm.sendRequest(request, (error, response) => {\r",
+					"                    if(error || (response.code >= 400 && response.code <= 599)) {\r",
+					"                        let err = error ? error : JSON.stringify(response.json());\r",
+					"                        console.error(\"При выполнении запроса к серверу возникла ошика.\\n\", err,\r",
+					"                             \"\\nДля отладки проблемы повторите такой же запрос к вашей программе \" + \r",
+					"                             \"на локальном компьютере. Данные запроса:\\n\", JSON.stringify(request));\r",
+					"\r",
+					"                        reject(new Error(errorText + err));\r",
+					"                    }\r",
+					"                    if(verbose) {\r",
+					"                        console.log(\"Результат обработки запроса: код состояния - \", response.code, \", тело: \", response.json());\r",
+					"                    }\r",
+					"                    if (response.stream.length === 0){\r",
+					"                        reject(new Error('Отправлено пустое тело ответа'))\r",
+					"                    }else{\r",
+					"                        resolve(response.json());\r",
+					"                    }\r",
+					"                });\r",
+					"                \r",
+					"            } catch(err) {\r",
+					"                if(verbose) {\r",
+					"                    console.error(errorText, err);\r",
+					"                }\r",
+					"                return Promise.reject(err);\r",
+					"            }\r",
+					"        });\r",
+					"    }\r",
+					"};\r",
+					"\r",
+					"RandomUtils = class {\r",
+					"    constructor() {}\r",
+					"\r",
+					"    getUser() {\r",
+					"        return {\r",
+					"            name: pm.variables.replaceIn('{{$randomFullName}}'),\r",
+					"            email: pm.variables.replaceIn('{{$randomEmail}}')\r",
+					"        };\r",
+					"    }\r",
+					"\r",
+					"    getCategory() {\r",
+					"        return {\r",
+					"            name: pm.variables.replaceIn('{{$randomWord}}') + Math.floor(Math.random() * 10000 * Math.random()).toString()\r",
+					"        };\r",
+					"    }\r",
+					"\r",
+					"    getEvent(categoryId) {\r",
+					"        return {\r",
+					"            annotation: pm.variables.replaceIn('{{$randomLoremParagraph}}'),\r",
+					"            category: categoryId,\r",
+					"            description: pm.variables.replaceIn('{{$randomLoremParagraphs}}'),\r",
+					"            eventDate: this.getFutureDateTime(),\r",
+					"            location: {\r",
+					"                lat: parseFloat(pm.variables.replaceIn('{{$randomLatitude}}')),\r",
+					"                lon: parseFloat(pm.variables.replaceIn('{{$randomLongitude}}')),\r",
+					"            },\r",
+					"            paid: pm.variables.replaceIn('{{$randomBoolean}}'),\r",
+					"            participantLimit: pm.variables.replaceIn('{{$randomInt}}'),\r",
+					"            requestModeration: pm.variables.replaceIn('{{$randomBoolean}}'),\r",
+					"            title: pm.variables.replaceIn('{{$randomLoremSentence}}'),\r",
+					"        }\r",
+					"    }\r",
+					"\r",
+					"    getCompilation(...eventIds) {\r",
+					"        return {\r",
+					"            title: pm.variables.replaceIn('{{$randomLoremSentence}}').slice(0, 50),\r",
+					"            pinned: pm.variables.replaceIn('{{$randomBoolean}}'),\r",
+					"            events: eventIds\r",
+					"        };\r",
+					"    }\r",
+					"\r",
+					"\r",
+					"    getFutureDateTime(hourShift = 5, minuteShift=0, yearShift=0) {\r",
+					"        let moment = require('moment');\r",
+					"\r",
+					"        let m = moment();\r",
+					"        m.add(hourShift, 'hour');\r",
+					"        m.add(minuteShift, 'minute');\r",
+					"        m.add(yearShift, 'year');\r",
+					"\r",
+					"        return m.format('YYYY-MM-DD HH:mm:ss');\r",
+					"    }\r",
+					"\r",
+					"    getWord(length = 1) {\r",
+					"        let result = '';\r",
+					"        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\r",
+					"        const charactersLength = characters.length;\r",
+					"        let counter = 0;\r",
+					"        while (counter < length) {\r",
+					"            result += characters.charAt(Math.floor(Math.random() * charactersLength));\r",
+					"            counter += 1;\r",
+					"        }\r",
+					"        return result;\r",
+					"    }\r",
+					"\r",
+					"    getComment(eventId) {\r",
+					"    return {\r",
+					"        text: pm.variables.replaceIn('{{$randomLoremSentence}}'),\r",
+					"        eventId: eventId\r",
+					"        };\r",
+					"    }\r",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "randomCategoryName",
+			"value": ""
+		},
+		{
+			"key": "randomUserName",
+			"value": ""
+		},
+		{
+			"key": "randomEmail",
+			"value": ""
+		},
+		{
+			"key": "randomEventTitle",
+			"value": ""
+		},
+		{
+			"key": "randomEventDescription",
+			"value": ""
+		},
+		{
+			"key": "randomPostTitle",
+			"value": ""
+		},
+		{
+			"key": "randomPostContent",
+			"value": ""
+		},
+		{
+			"key": "categoryId",
+			"value": ""
+		},
+		{
+			"key": "uid",
+			"value": ""
+		},
+		{
+			"key": "eid",
+			"value": ""
+		},
+		{
+			"key": "response",
+			"value": ""
+		},
+		{
+			"key": "commentId1",
+			"value": ""
+		},
+		{
+			"key": "commentId2",
+			"value": ""
+		},
+		{
+			"key": "commentId",
+			"value": ""
+		},
+		{
+			"key": "userId",
+			"value": ""
+		},
+		{
+			"key": "eventId",
+			"value": ""
+		},
+		{
+			"key": "11commentId",
+			"value": ""
+		},
+		{
+			"key": "1commentId",
+			"value": ""
+		},
+		{
+			"key": "2uid",
+			"value": ""
+		},
+		{
+			"key": "2eid",
+			"value": ""
+		},
+		{
+			"key": "2commentId",
+			"value": ""
+		},
+		{
+			"key": "uid2",
+			"value": ""
+		},
+		{
+			"key": "eid2",
+			"value": ""
+		}
+	]
+}
