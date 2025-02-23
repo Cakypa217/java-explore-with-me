@@ -5,6 +5,8 @@ import lombok.*;
 import ru.practicum.model.enums.EventState;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -46,6 +48,9 @@ public class Event {
     private LocalDateTime createdOn;
 
     private LocalDateTime publishedOn;
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
 
     @Embedded
     @AttributeOverrides({

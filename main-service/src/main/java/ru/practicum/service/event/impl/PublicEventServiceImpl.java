@@ -11,6 +11,7 @@ import ru.practicum.ViewStats;
 import ru.practicum.ViewStatsRequest;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.mapper.EventMapper;
+import ru.practicum.model.dto.comment.CommentDto;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.EventShortDto;
 import ru.practicum.model.entity.Event;
@@ -19,6 +20,7 @@ import ru.practicum.model.enums.EventState;
 import ru.practicum.model.enums.ParticipationStatus;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.RequestRepository;
+import ru.practicum.service.comment.CommentService;
 import ru.practicum.service.event.interfaces.PublicEventService;
 
 import java.time.LocalDateTime;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PublicEventServiceImpl implements PublicEventService {
+    private final CommentService commentService;
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final RequestRepository requestRepository;
@@ -59,9 +62,12 @@ public class PublicEventServiceImpl implements PublicEventService {
         long views = stats.isEmpty() ? 0 : stats.getFirst().getHits();
         long confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, ParticipationStatus.CONFIRMED);
 
+        List<CommentDto> comments = commentService.getCommentsByEvent(eventId);
+
         EventFullDto eventFullDto = eventMapper.toEventFullDto(event);
         eventFullDto.setViews(views);
         eventFullDto.setConfirmedRequests(confirmedRequests);
+        eventFullDto.setComments(comments);
 
         log.info("Получено событие {}", eventFullDto);
         return eventFullDto;
@@ -110,7 +116,7 @@ public class PublicEventServiceImpl implements PublicEventService {
 
         Map<Long, Long> confirmedRequests = events.isEmpty()
                 ? Collections.emptyMap()
-                :  requestRepository.countConfirmedRequestsByEventIds(events.stream().map(Event::getId).toList())
+                : requestRepository.countConfirmedRequestsByEventIds(events.stream().map(Event::getId).toList())
                 .stream()
                 .collect(Collectors.toMap(o -> (Long) o[0], o -> (Long) o[1]));
 

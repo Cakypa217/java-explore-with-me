@@ -8,13 +8,17 @@ import ru.practicum.StatsClient;
 import ru.practicum.ViewStats;
 import ru.practicum.ViewStatsRequest;
 import ru.practicum.exception.ConflictException;
+import ru.practicum.mapper.CommentMapper;
 import ru.practicum.mapper.CustomEventMapper;
 import ru.practicum.mapper.EventMapper;
+import ru.practicum.model.dto.comment.CommentDto;
 import ru.practicum.model.dto.event.EventFullDto;
 import ru.practicum.model.dto.event.UpdateEventAdminRequest;
 import ru.practicum.model.entity.Category;
+import ru.practicum.model.entity.Comment;
 import ru.practicum.model.entity.Event;
 import ru.practicum.model.enums.EventState;
+import ru.practicum.repository.CommentRepository;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.RequestRepository;
 import ru.practicum.service.category.CategoryService;
@@ -32,8 +36,10 @@ import java.util.stream.Collectors;
 public class AdminEventServiceImpl implements AdminEventService {
     private final EventRepository eventRepository;
     private final CategoryService categoryService;
+    private final CommentRepository commentRepository;
     private final RequestRepository requestRepository;
     private final PrivateEventService privateEventService;
+    private final CommentMapper commentMapper;
     private final EventMapper eventMapper;
     private final CustomEventMapper customEventMapper;
     private final StatsClient statsClient;
@@ -94,16 +100,28 @@ public class AdminEventServiceImpl implements AdminEventService {
                 .stream()
                 .collect(Collectors.toMap(o -> (Long) o[0], o -> (Long) o[1]));
 
-        List<EventFullDto> result = events.stream()
-                .peek(event -> {
-                    long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
-                    long confirmed = confirmedRequests.getOrDefault(event.getId(), 0L);
+        List<Comment> commentsList = commentRepository.getCommentsByEventIds(events.stream()
+                .map(Event::getId)
+                .toList());
 
-                    event.setViews(views);
-                    event.setConfirmedRequests(confirmed);
-                })
-                .map(eventMapper::toEventFullDto)
-                .toList();
+        Map<Long, List<CommentDto>> commentsMap = commentsList.stream()
+                .collect(Collectors.groupingBy(
+                        comment -> comment.getEvent().getId(),
+                        Collectors.mapping(commentMapper::toDto, Collectors.toList())
+                ));
+
+        List<EventFullDto> result = events.stream().map(event -> {
+            long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
+            long confirmed = confirmedRequests.getOrDefault(event.getId(), 0L);
+            List<CommentDto> comments = commentsMap.getOrDefault(event.getId(), Collections.emptyList());
+
+            event.setViews(views);
+            event.setConfirmedRequests(confirmed);
+            EventFullDto dto = eventMapper.toEventFullDto(event);
+            dto.setComments(comments);
+            return dto;
+        }).toList();
+
         log.info("Администратором получено {} событий", result.size());
         return result;
     }
@@ -138,6 +156,7 @@ public class AdminEventServiceImpl implements AdminEventService {
                         throw new ConflictException("Нельзя отклонить событие, так как оно уже опубликовано");
                     }
                     event.setState(EventState.CANCELED);
+                    commentRepository.deleteCommentsByEventId(eventId);
                     break;
 
                 default:

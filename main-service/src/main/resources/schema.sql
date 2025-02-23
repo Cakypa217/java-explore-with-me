@@ -31,6 +31,17 @@ CREATE TABLE IF NOT EXISTS events (
     FOREIGN KEY (initiator_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS comments (
+    id BIGSERIAL PRIMARY KEY,
+    event_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    text TEXT NOT NULL,
+    created TIMESTAMP NOT NULL DEFAULT now(),
+    updated TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS compilations (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(120) NOT NULL,
